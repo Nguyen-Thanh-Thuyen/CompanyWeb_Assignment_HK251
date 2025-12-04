@@ -1,215 +1,98 @@
 <?php
-/**
- * OrderModel.php
- * Model xử lý đơn hàng
- */
+// models/OrderModel.php
+require_once __DIR__ . '/../config/database.php';
 
 class OrderModel {
     private $conn;
-    private $table = 'orders';
-    private $itemsTable = 'order_items';
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    /**
-     * Tạo order từ cart (checkout)
-     */
-    public function createFromCart($userId, $cartId, $note = '') {
-        try {
-            $this->conn->beginTransaction();
-            
-            // 1. Lấy cart items
-            $cartModel = new CartModel($this->conn);
-            $cartItems = $cartModel->getCartItems($cartId);
-            
-            if (empty($cartItems)) {
-                throw new Exception("Cart is empty");
-            }
-            
-            // 2. Tính tổng tiền
-            $total = 0;
-            foreach ($cartItems as $item) {
-                $total += $item['quantity'] * $item['price'];
-            }
-            
-            // 3. Tạo order
-            $sql = "INSERT INTO {$this->table} (user_id, total, status, note) 
-                    VALUES (?, ?, 'pending', ?)";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$userId, $total, $note]);
-            
-            $orderId = $this->conn->lastInsertId();
-            
-            // 4. Copy cart items sang order items
-            foreach ($cartItems as $item) {
-                $sql = "INSERT INTO {$this->itemsTable} (order_id, product_id, quantity, price) 
-                        VALUES (?, ?, ?, ?)";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->execute([
-                    $orderId,
-                    $item['product_id'],
-                    $item['quantity'],
-                    $item['price']
-                ]);
-                
-                // TODO: Giảm stock của product
-                // ProductModel::decreaseStock($item['product_id'], $item['quantity']);
-            }
-            
-            // 5. Đánh dấu cart là ordered
-            $cartModel->markAsOrdered($cartId);
-            
-            $this->conn->commit();
-            return $orderId;
-            
-        } catch (Exception $e) {
-            $this->conn->rollBack();
-            error_log("OrderModel::createFromCart() Error: " . $e->getMessage());
-            return false;
-        }
+    // --- CLIENT METHODS ---
+    public function createOrder($userId, $total, $method, $note) {
+        $query = "INSERT INTO orders (user_id, total_amount, payment_method, note) VALUES (:uid, :total, :method, :note)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':uid', $userId);
+        $stmt->bindParam(':total', $total);
+        $stmt->bindParam(':method', $method);
+        $stmt->bindParam(':note', $note);
+        if ($stmt->execute()) return $this->conn->lastInsertId();
+        return false;
     }
 
-    /**
-     * Lấy chi tiết order
-     */
-    public function getById($orderId) {
-        try {
-            $sql = "SELECT o.*, u.username, u.email 
-                    FROM {$this->table} o 
-                    LEFT JOIN users u ON o.user_id = u.id 
-                    WHERE o.id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$orderId]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("OrderModel::getById() Error: " . $e->getMessage());
-            return null;
-        }
+    public function addOrderItem($orderId, $productId, $name, $price, $qty) {
+        $query = "INSERT INTO order_items (order_id, product_id, product_name, price, quantity) VALUES (:oid, :pid, :name, :price, :qty)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':oid', $orderId);
+        $stmt->bindParam(':pid', $productId);
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':price', $price);
+        $stmt->bindParam(':qty', $qty);
+        return $stmt->execute();
     }
 
-    /**
-     * Lấy order items
-     */
+    public function getOrdersByUser($userId) {
+        $query = "SELECT * FROM orders WHERE user_id = :uid ORDER BY created_at DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':uid', $userId);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getOrderById($orderId, $userId = null) {
+        if ($userId) {
+            $query = "SELECT * FROM orders WHERE id = :oid AND user_id = :uid LIMIT 1";
+        } else {
+            $query = "SELECT o.*, u.name as user_name, u.email as user_email FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = :oid LIMIT 1";
+        }
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':oid', $orderId);
+        if ($userId) $stmt->bindParam(':uid', $userId);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function getOrderItems($orderId) {
-        try {
-            $sql = "SELECT oi.*, p.name, p.image 
-                    FROM {$this->itemsTable} oi 
-                    INNER JOIN products p ON oi.product_id = p.id 
-                    WHERE oi.order_id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$orderId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("OrderModel::getOrderItems() Error: " . $e->getMessage());
-            return [];
-        }
+        $query = "SELECT oi.*, p.image FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE order_id = :oid";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':oid', $orderId);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Lấy danh sách orders của user
-     */
-    public function getByUserId($userId, $limit = 10, $offset = 0) {
-        try {
-            $sql = "SELECT * FROM {$this->table} 
-                    WHERE user_id = ? 
-                    ORDER BY created_at DESC 
-                    LIMIT ? OFFSET ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$userId, $limit, $offset]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("OrderModel::getByUserId() Error: " . $e->getMessage());
-            return [];
-        }
+    // --- ADMIN METHODS ---
+    public function getAllOrders($limit, $offset) {
+        $query = "SELECT o.*, u.name as user_name FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC LIMIT :limit OFFSET :offset";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * ADMIN: Lấy tất cả orders
-     */
-    public function getAllForAdmin($status = '', $limit = 20, $offset = 0) {
-        try {
-            $sql = "SELECT o.*, u.username, u.email 
-                    FROM {$this->table} o 
-                    LEFT JOIN users u ON o.user_id = u.id 
-                    WHERE 1=1";
-            
-            $params = [];
-            
-            if (!empty($status)) {
-                $sql .= " AND o.status = ?";
-                $params[] = $status;
-            }
-            
-            $sql .= " ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
-            $params[] = $limit;
-            $params[] = $offset;
-            
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute($params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("OrderModel::getAllForAdmin() Error: " . $e->getMessage());
-            return [];
-        }
+    public function countAll() {
+        $query = "SELECT COUNT(*) as total FROM orders";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
     }
 
-    /**
-     * ADMIN: Đếm tổng orders
-     */
-    public function countAll($status = '') {
-        try {
-            $sql = "SELECT COUNT(*) FROM {$this->table} WHERE 1=1";
-            $params = [];
-            
-            if (!empty($status)) {
-                $sql .= " AND status = ?";
-                $params[] = $status;
-            }
-            
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute($params);
-            return $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            error_log("OrderModel::countAll() Error: " . $e->getMessage());
-            return 0;
-        }
-    }
-
-    /**
-     * ADMIN: Cập nhật status order
-     */
     public function updateStatus($orderId, $status) {
-        try {
-            $validStatuses = ['pending', 'confirmed', 'shipping', 'completed', 'canceled'];
-            
-            if (!in_array($status, $validStatuses)) {
-                return false;
-            }
-            
-            $sql = "UPDATE {$this->table} SET status = ? WHERE id = ?";
-            $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([$status, $orderId]);
-        } catch (PDOException $e) {
-            error_log("OrderModel::updateStatus() Error: " . $e->getMessage());
-            return false;
-        }
+        $query = "UPDATE orders SET status = :status WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':status', $status);
+        $stmt->bindParam(':id', $orderId);
+        return $stmt->execute();
     }
 
-    /**
-     * Thống kê orders theo status (dành cho admin dashboard)
-     */
-    public function getStatsByStatus() {
-        try {
-            $sql = "SELECT status, COUNT(*) as count, SUM(total) as total_amount 
-                    FROM {$this->table} 
-                    GROUP BY status";
-            $stmt = $this->conn->query($sql);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("OrderModel::getStatsByStatus() Error: " . $e->getMessage());
-            return [];
-        }
+    // [MỚI] Tính tổng doanh thu (chỉ đơn hàng đã hoàn thành)
+    public function sumRevenue() {
+        $query = "SELECT SUM(total_amount) as revenue FROM orders WHERE status = 'completed'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['revenue'] ?? 0;
     }
 }

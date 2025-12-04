@@ -1,25 +1,25 @@
 <?php
-require_once 'models/NewsModel.php'; 
-require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
-class NewsController {
-    // Xem danh sách bài viết (bao gồm tìm kiếm)
-    public function index() {
-        $model = new NewsModel();
-        $keyword = $_GET['keyword'] ?? '';
-        $news = $model->getNewsList($keyword);
-        require_once 'views/news_list.php';
+require_once 'BaseController.php';
+require_once ROOT_PATH . '/models/NewsModel.php';
+
+class NewsController extends BaseController {
+    private $newsModel;
+
+    public function __construct() {
+        $database = new Database();
+        $this->newsModel = new NewsModel($database->getConnection());
     }
 
-    // Xem chi tiết bài viết
+    public function index() {
+        $news = $this->newsModel->getAll(10, 0);
+        $this->loadView('news/index', ['news_list' => $news, 'page_title' => 'Tin tức']);
+    }
+
     public function detail() {
-        $id = $_GET['id'] ?? null;
-        $model = new NewsModel();
-        $article = $model->getArticleById($id);
-        $comments = $model->getCommentsByArticleId($id); // Có thể dùng CommentModel
-
-        // Xử lý POST bình luận tại đây nếu có
-
-        // require_once 'views/news_detail.php';
+        $id = $_GET['id'] ?? 0;
+        $news = $this->newsModel->getById($id);
+        if (!$news) $this->redirect('index.php?page=news_list');
+        $this->loadView('news/detail', ['news' => $news, 'page_title' => $news['title']]);
     }
 }
 ?>

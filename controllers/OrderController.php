@@ -1,267 +1,160 @@
 <?php
-/**
- * OrderController.php
- * Controller xử lý đơn hàng
- */
+// controllers/OrderController.php
+require_once 'BaseController.php';
+require_once ROOT_PATH . '/models/OrderModel.php';
 
-require_once __DIR__ . '/../models/OrderModel.php';
-require_once __DIR__ . '/../models/CartModel.php';
-require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
-class OrderController {
+class OrderController extends BaseController {
     private $orderModel;
-    private $cartModel;
-    private $db;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct() {
+        $database = new Database();
+        $db = $database->getConnection();
+        parent::__construct($db);
         $this->orderModel = new OrderModel($db);
-        $this->cartModel = new CartModel($db);
     }
 
+    // =========================================================================
+    // CLIENT SIDE (Customer View)
+    // =========================================================================
+
     /**
-     * USER: Checkout - tạo order từ cart
-     * Route: index.php?page=checkout (POST)
-     * Yêu cầu: User phải đăng nhập
+     * View logged-in user's order history
      */
-    public function checkout() {
-        // TODO: Check if user is logged in
-        // if (!isLoggedIn()) {
-        //     $_SESSION['error'] = "Vui lòng đăng nhập để đặt hàng";
-        //     $this->redirect('index.php?page=login');
-        //     return;
-        // }
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('index.php?page=cart');
-            return;
+    public function myOrders() {
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('index.php?page=login');
         }
 
-        // TODO: Lấy user_id từ session
-        // $userId = $_SESSION['user']['id'];
-        $userId = 1; // Fake user ID cho testing
+        $orders = $this->orderModel->getOrdersByUser($_SESSION['user_id']);
 
-        // Lấy cart active của user
-        $cart = $this->cartModel->getOrCreateActiveCart($userId);
-
-        if (!$cart) {
-            $_SESSION['error'] = "Không tìm thấy giỏ hàng";
-            $this->redirect('index.php?page=cart');
-            return;
-        }
-
-        // Kiểm tra cart có items không
-        $cartItems = $this->cartModel->getCartItems($cart['id']);
-
-        if (empty($cartItems)) {
-            $_SESSION['error'] = "Giỏ hàng trống";
-            $this->redirect('index.php?page=cart');
-            return;
-        }
-
-        // Lấy note từ form
-        $note = isset($_POST['note']) ? htmlspecialchars(trim($_POST['note'])) : '';
-
-        // Tạo order
-        $orderId = $this->orderModel->createFromCart($userId, $cart['id'], $note);
-
-        if ($orderId) {
-            $_SESSION['success'] = "Đặt hàng thành công! Mã đơn hàng: #" . $orderId;
-            $this->redirect('index.php?page=order_detail&id=' . $orderId);
-        } else {
-            $_SESSION['error'] = "Đặt hàng thất bại. Vui lòng thử lại";
-            $this->redirect('index.php?page=cart');
-        }
+        $data = [
+            'orders' => $orders,
+            'page_title' => 'Lịch sử đơn hàng'
+        ];
+        $this->loadView('order/index', $data);
     }
 
     /**
-     * USER: Xem chi tiết đơn hàng
-     * Route: index.php?page=order_detail&id=xxx
+     * View details of a specific order (Client)
      */
     public function detail() {
-        // TODO: Check if user is logged in
-        // if (!isLoggedIn()) {
-        //     $this->redirect('index.php?page=login');
-        //     return;
-        // }
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('index.php?page=login');
+        }
 
         $orderId = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
-        if ($orderId <= 0) {
-            $this->redirect('index.php?page=home');
-            return;
-        }
-
-        $order = $this->orderModel->getById($orderId);
+        
+        // Client: Check ownership (Pass $_SESSION['user_id'])
+        $order = $this->orderModel->getOrderById($orderId, $_SESSION['user_id']);
 
         if (!$order) {
-            $_SESSION['error'] = "Đơn hàng không tồn tại";
-            $this->redirect('index.php?page=home');
+            $this->redirect('index.php?page=my_orders');
             return;
         }
 
-        // TODO: Check if order belongs to current user (security)
-        // if ($order['user_id'] != $_SESSION['user']['id'] && !isAdmin()) {
-        //     $_SESSION['error'] = "Bạn không có quyền xem đơn hàng này";
-        //     $this->redirect('index.php?page=home');
-        //     return;
-        // }
-
-        $orderItems = $this->orderModel->getOrderItems($orderId);
+        $items = $this->orderModel->getOrderItems($orderId);
 
         $data = [
             'order' => $order,
-            'orderItems' => $orderItems
+            'items' => $items,
+            'page_title' => 'Chi tiết đơn hàng #' . $orderId
         ];
-
-        $this->loadView('product/order_detail', $data);
+        $this->loadView('order/detail', $data);
     }
 
-    /**
-     * USER: Danh sách đơn hàng của user
-     * Route: index.php?page=my_orders
-     */
-    public function myOrders() {
-        // TODO: Check if user is logged in
-        // if (!isLoggedIn()) {
-        //     $this->redirect('index.php?page=login');
-        //     return;
-        // }
-
-        // TODO: Lấy user_id từ session
-        // $userId = $_SESSION['user']['id'];
-        $userId = 1; // Fake user ID
-
-        $currentPage = isset($_GET['p']) ? max(1, intval($_GET['p'])) : 1;
-        $limit = 10;
-        $offset = ($currentPage - 1) * $limit;
-
-        $orders = $this->orderModel->getByUserId($userId, $limit, $offset);
-
-        $data = [
-            'orders' => $orders,
-            'currentPage' => $currentPage
-        ];
-
-        $this->loadView('product/my_orders', $data);
-    }
+    // =========================================================================
+    // ADMIN SIDE (Admin Management)
+    // =========================================================================
 
     /**
-     * ADMIN: Danh sách tất cả đơn hàng
-     * Route: index.php?page=admin_order_list&status=xxx&p=1
+     * ADMIN: List all orders with pagination
+     * Route: index.php?page=admin_order_list
      */
     public function adminList() {
-        // TODO: Check admin permission
-        // if (!isAdmin()) {
-        //     $this->redirect('index.php?page=home');
-        //     return;
-        // }
+        $this->requireAdmin();
 
-        $status = isset($_GET['status']) ? trim($_GET['status']) : '';
-        $currentPage = isset($_GET['p']) ? max(1, intval($_GET['p'])) : 1;
-        $limit = 20;
-        $offset = ($currentPage - 1) * $limit;
+        $page = isset($_GET['p']) ? max(1, intval($_GET['p'])) : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
 
-        $orders = $this->orderModel->getAllForAdmin($status, $limit, $offset);
-        $totalOrders = $this->orderModel->countAll($status);
+        $orders = $this->orderModel->getAllOrders($limit, $offset);
+        $totalOrders = $this->orderModel->countAll();
         $totalPages = ceil($totalOrders / $limit);
 
-        // Lấy thống kê theo status
-        $stats = $this->orderModel->getStatsByStatus();
-
         $data = [
+            'page_title' => 'Quản lý đơn hàng',
             'orders' => $orders,
-            'stats' => $stats,
-            'status' => $status,
-            'currentPage' => $currentPage,
+            'currentPage' => $page,
             'totalPages' => $totalPages,
             'totalOrders' => $totalOrders
         ];
 
-        $this->loadView('admin/order/index', $data);
+        // Uses Tabler Admin Layout
+        $this->loadAdminView('admin/order/index', $data);
     }
 
     /**
-     * ADMIN: Xem chi tiết đơn hàng (admin view)
-     * Route: index.php?page=admin_order_detail&id=xxx
+     * ADMIN: View Order Detail
+     * Route: index.php?page=admin_order_detail&id=X
      */
     public function adminDetail() {
-        // TODO: Check admin permission
-        // if (!isAdmin()) {
-        //     $this->redirect('index.php?page=home');
-        //     return;
-        // }
-
+        $this->requireAdmin();
         $orderId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-        if ($orderId <= 0) {
-            $this->redirect('index.php?page=admin_order_list');
-            return;
-        }
-
-        $order = $this->orderModel->getById($orderId);
-
+        // Admin: Pass null as userId to bypass ownership check
+        $order = $this->orderModel->getOrderById($orderId, null);
+        
         if (!$order) {
-            $_SESSION['error'] = "Đơn hàng không tồn tại";
             $this->redirect('index.php?page=admin_order_list');
-            return;
         }
 
-        $orderItems = $this->orderModel->getOrderItems($orderId);
+        $items = $this->orderModel->getOrderItems($orderId);
 
-        $data = [
+        $this->loadAdminView('admin/order/detail', [
+            'page_title' => 'Chi tiết đơn hàng #' . $orderId,
             'order' => $order,
-            'orderItems' => $orderItems
-        ];
-
-        $this->loadView('admin/order/detail', $data);
+            'items' => $items
+        ]);
     }
 
     /**
-     * ADMIN: Cập nhật trạng thái đơn hàng
-     * Route: index.php?page=admin_order_update_status (POST)
+     * ADMIN: Update Status
+     * Route: index.php?page=admin_order_update_status
      */
     public function updateStatus() {
-        // TODO: Check admin permission
-        // if (!isAdmin()) {
-        //     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-        //     return;
-        // }
+        $this->requireAdmin();
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $orderId = intval($_POST['order_id']);
+            $status = $_POST['status'];
+            
+            $result = $this->orderModel->updateStatus($orderId, $status);
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('index.php?page=admin_order_list');
-            return;
+            // Check if AJAX request
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                echo json_encode(['success' => $result, 'message' => $result ? 'Cập nhật thành công' : 'Lỗi cập nhật']);
+            } else {
+                // Standard Post: Redirect back
+                $this->redirect('index.php?page=admin_order_detail&id=' . $orderId);
+            }
         }
+    }
 
-        $orderId = isset($_POST['order_id']) ? intval($_POST['order_id']) : 0;
-        $status = isset($_POST['status']) ? trim($_POST['status']) : '';
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
 
-        if ($orderId <= 0 || empty($status)) {
-            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
-            return;
-        }
-
-        $result = $this->orderModel->updateStatus($orderId, $status);
-
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'Cập nhật trạng thái thành công']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Cập nhật trạng thái thất bại']);
+    private function requireAdmin() {
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+            $this->redirect('index.php?page=home');
         }
     }
 
     /**
-     * Helper: Load view
+     * Helper to load Admin Views with the Admin Layout
      */
-    private function loadView($view, $data = []) {
+    protected function loadAdminView($view, $data = []) {
         extract($data);
-        require_once __DIR__ . '/../views/' . $view . '.php';
-    }
-
-    /**
-     * Helper: Redirect
-     */
-    private function redirect($url) {
-        header('Location: ' . $url);
-        exit();
+        require_once ROOT_PATH . '/views/layouts/admin_layout.php';
     }
 }

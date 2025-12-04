@@ -1,29 +1,69 @@
 <?php
-// Cần model FaqModel để tương tác DB
- require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
-class AdminFaqController {
-    // Xem danh sách
+require_once 'BaseController.php';
+require_once ROOT_PATH . '/models/FaqModel.php';
+
+class AdminFaqController extends BaseController {
+    private $faqModel;
+
+    public function __construct() {
+        $database = new Database();
+        $db = $database->getConnection();
+        parent::__construct($db);
+        $this->faqModel = new FaqModel($db);
+    }
+
     public function index() {
-        // Hiển thị danh sách FAQ, có form tìm kiếm/phân trang
+        $this->requireAdmin();
+        $faqs = $this->faqModel->getAll();
+        $this->loadAdminView('admin/faq/index', [
+            'page_title' => 'Quản lý FAQ',
+            'faqs' => $faqs
+        ]);
     }
 
-    // Hiển thị form và xử lý thêm mới
     public function create() {
+        $this->requireAdmin();
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $model->addFaq($_POST['question'], $_POST['answer']);
+            $this->faqModel->create($_POST['question'], $_POST['answer']);
+            $this->redirect('index.php?page=admin_faq_list');
+            return;
         }
-        require_once 'views/admin/faq_create.php';
+        $this->loadAdminView('admin/faq/create', ['page_title' => 'Thêm câu hỏi']);
     }
 
-    // Hiển thị form và xử lý chỉnh sửa
     public function edit() {
-        // Lấy ID FAQ từ GET, load dữ liệu, xử lý POST
+        $this->requireAdmin();
+        $id = $_GET['id'] ?? 0;
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->faqModel->update($id, $_POST['question'], $_POST['answer']);
+            $this->redirect('index.php?page=admin_faq_list');
+            return;
+        }
+
+        $faq = $this->faqModel->getById($id);
+        $this->loadAdminView('admin/faq/edit', ['page_title' => 'Sửa câu hỏi', 'faq' => $faq]);
     }
 
-    // Xử lý xóa
     public function delete() {
-        $model->deleteFaq($_GET['id']);
-        // Chuyển hướng về admin_faq_list
+        $this->requireAdmin();
+        $id = $_POST['id'] ?? 0;
+        if ($this->faqModel->delete($id)) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false]);
+        }
+    }
+
+    private function requireAdmin() {
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+            $this->redirect('index.php?page=home');
+        }
+    }
+
+    protected function loadAdminView($view, $data = []) {
+        extract($data);
+        require_once ROOT_PATH . '/views/layouts/admin_layout.php';
     }
 }
 ?>

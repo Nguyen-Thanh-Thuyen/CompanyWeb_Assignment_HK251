@@ -1,16 +1,22 @@
 <?php
-require_once 'models/SettingModel.php'; // Để lấy thông tin trang Giới thiệu
-require_once 'views/AboutView.php';
-require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
-class AboutController {
-    public function index() {
-        // 1. Lấy dữ liệu: Thông tin giới thiệu (từ database/setting)
-        $model = new SettingModel();
-        $data = $model->getGeneralSettings(); 
+// controllers/AboutController.php
+require_once 'BaseController.php';
 
-        // 2. Hiển thị View
-        $view = new AboutView();
-        $view->render($data);
+class AboutController extends BaseController {
+    
+    public function __construct() {
+        // Initialize DB if needed, though static pages might not need it
+        $database = new Database();
+        $db = $database->getConnection();
+        parent::__construct($db);
+    }
+
+    public function index() {
+        $data = [
+            'page_title' => 'Về chúng tôi - Câu chuyện thương hiệu'
+        ];
+        // Loading views/client/about.php
+        $this->loadView('client/about', $data);
     }
 }
 ?>

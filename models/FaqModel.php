@@ -1,43 +1,45 @@
 <?php
+require_once __DIR__ . '/../config/database.php';
+
 class FaqModel {
-    private $pdo;
+    private $conn;
 
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
+    public function __construct($db) {
+        $this->conn = $db;
     }
 
-    /**
-     * Lấy tất cả các câu hỏi/đáp, sắp xếp theo thứ tự ưu tiên
-     * @return array Danh sách FAQ
-     */
-    public function getAllFaqs() {
-        try {
-            $stmt = $this->pdo->query("SELECT * FROM faqs ORDER BY sort_order ASC, id DESC");
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            // Xử lý lỗi
-            return [];
-        }
+    public function getAll() {
+        $stmt = $this->conn->prepare("SELECT * FROM faqs ORDER BY created_at DESC");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Thêm một câu hỏi/đáp mới
-     * @param string $question Câu hỏi
-     * @param string $answer Câu trả lời
-     * @return bool True nếu thành công
-     */
-    public function addFaq($question, $answer) {
-        try {
-            $stmt = $this->pdo->prepare("INSERT INTO faqs (question, answer, created_at) VALUES (:q, :a, NOW())");
-            $stmt->bindParam(':q', $question);
-            $stmt->bindParam(':a', $answer);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            // Xử lý lỗi
-            return false;
-        }
+    public function getById($id) {
+        $stmt = $this->conn->prepare("SELECT * FROM faqs WHERE id = :id LIMIT 1");
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Cần bổ sung các hàm: getFaqById($id), updateFaq($id, $q, $a), deleteFaq($id)
+    public function create($question, $answer) {
+        $stmt = $this->conn->prepare("INSERT INTO faqs (question, answer) VALUES (:question, :answer)");
+        $stmt->bindParam(':question', $question);
+        $stmt->bindParam(':answer', $answer);
+        return $stmt->execute();
+    }
+
+    public function update($id, $question, $answer) {
+        $stmt = $this->conn->prepare("UPDATE faqs SET question = :question, answer = :answer WHERE id = :id");
+        $stmt->bindParam(':question', $question);
+        $stmt->bindParam(':answer', $answer);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
+
+    public function delete($id) {
+        $stmt = $this->conn->prepare("DELETE FROM faqs WHERE id = :id");
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
 }
 ?>

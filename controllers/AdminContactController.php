@@ -1,43 +1,76 @@
 <?php
-// D:\XAMPP\htdocs\WEB\controllers\AdminContactController.php
-require_once ROOT_PATH . '/config/database.php';
+require_once 'BaseController.php';
 require_once ROOT_PATH . '/models/ContactModel.php';
-require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
-class AdminContactController {
-    private $model;
-    private $db;
+
+class AdminContactController extends BaseController {
+    private $contactModel;
 
     public function __construct() {
         $database = new Database();
-        $this->db = $database->getConnection();
-        $this->model = new ContactModel($this->db);
+        $db = $database->getConnection();
+        parent::__construct($db);
+        $this->contactModel = new ContactModel($db);
     }
 
-    // 1. Hiển thị danh sách liên hệ
     public function index() {
-        $contacts = $this->model->getAll(); // Lấy tất cả từ DB
-        require_once ROOT_PATH . '/views/admin/contacts.php';
+        $this->requireAdmin();
+
+        $page = isset($_GET['p']) ? max(1, intval($_GET['p'])) : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+
+        $contacts = $this->contactModel->getAll($limit, $offset);
+        $totalContacts = $this->contactModel->countAll();
+        $totalPages = ceil($totalContacts / $limit);
+
+        $data = [
+            'page_title' => 'Quản lý Liên hệ',
+            'contacts' => $contacts,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'totalContacts' => $totalContacts
+        ];
+
+        $this->loadAdminView('admin/contact/index', $data);
     }
 
-    // 2. Xử lý: Đánh dấu đã đọc / chưa đọc
     public function update_status() {
-        if (isset($_GET['id']) && isset($_GET['status'])) {
-            $id = $_GET['id'];
-            $status = $_GET['status']; // 'read' hoặc 'new'
-            $this->model->updateStatus($id, $status);
+        $this->requireAdmin();
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = intval($_POST['id']);
+            $status = $_POST['status']; // 'new', 'read', 'replied'
+            
+            if ($this->contactModel->updateStatus($id, $status)) {
+                echo json_encode(['success' => true]);
+            } else {
+                echo json_encode(['success' => false]);
+            }
         }
-        // Quay lại trang danh sách
-        header("Location: index.php?page=admin_contacts");
     }
 
-    // 3. Xử lý: Xóa liên hệ
     public function delete() {
-        if (isset($_GET['id'])) {
-            $id = $_GET['id'];
-            $this->model->delete($id);
+        $this->requireAdmin();
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = intval($_POST['id']);
+            if ($this->contactModel->delete($id)) {
+                echo json_encode(['success' => true]);
+            } else {
+                echo json_encode(['success' => false]);
+            }
         }
-        // Quay lại trang danh sách
-        header("Location: index.php?page=admin_contacts");
+    }
+
+    private function requireAdmin() {
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+            $this->redirect('index.php?page=home');
+        }
+    }
+
+    protected function loadAdminView($view, $data = []) {
+        extract($data);
+        require_once ROOT_PATH . '/views/layouts/admin_layout.php';
     }
 }
 ?>
