@@ -1,7 +1,7 @@
 <?php
 require_once ROOT_PATH . '/config/database.php';
 require_once ROOT_PATH . '/models/SettingModel.php';
-
+require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
 class AdminSettingController {
     private $model;
     private $db;

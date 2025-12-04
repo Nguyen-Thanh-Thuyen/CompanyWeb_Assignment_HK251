@@ -1,9 +1,9 @@
 <?php
 class Database {
     private $host = "localhost";
-    private $db_name = "assignment_db"; // Đặt tên DB của bạn ở đây
+    private $db_name = "shop"; 
     private $username = "root";
-    private $password = "";
+    private $password = "VTnL74123!!!";
     public $conn;
 
     public function getConnection() {
@@ -15,9 +15,13 @@ class Database {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
-            $this->conn->exec("set names utf8");
+            // Use setAttribute for names/charset for consistency with other attributes
+            $this->conn->setAttribute(PDO::MYSQL_ATTR_INIT_COMMAND, "SET NAMES 'utf8'");
+            
         } catch(PDOException $exception) {
-            echo "Lỗi kết nối: " . $exception->getMessage();
+            // 💡 CRITICAL CHANGE: Stop execution when the connection fails.
+            // In a production environment, you would log this error instead of echoing.
+            die("Lỗi kết nối CSDL: " . $exception->getMessage());
         }
         return $this->conn;
     }

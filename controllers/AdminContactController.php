@@ -2,7 +2,7 @@
 // D:\XAMPP\htdocs\WEB\controllers\AdminContactController.php
 require_once ROOT_PATH . '/config/database.php';
 require_once ROOT_PATH . '/models/ContactModel.php';
-
+require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
 class AdminContactController {
     private $model;
     private $db;

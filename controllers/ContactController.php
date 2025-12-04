@@ -3,7 +3,7 @@
 require_once ROOT_PATH . '/config/database.php';
 require_once ROOT_PATH . '/models/ContactModel.php';
 require_once ROOT_PATH . '/models/SettingModel.php'; // Để lấy menu/logo hiện ra view
-
+require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
 class ContactController {
     private $contactModel;
     private $settingModel;

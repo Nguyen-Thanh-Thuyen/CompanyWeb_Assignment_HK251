@@ -6,7 +6,7 @@
 
 require_once __DIR__ . '/../models/OrderModel.php';
 require_once __DIR__ . '/../models/CartModel.php';
-
+require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
 class OrderController {
     private $orderModel;
     private $cartModel;
