@@ -1,54 +1,58 @@
 <?php
+// controllers/AdminSettingController.php
 require_once ROOT_PATH . '/config/database.php';
 require_once ROOT_PATH . '/models/SettingModel.php';
-require_once 'BaseController.php'; // Nếu bạn chưa có autoloader
-class AdminSettingController {
-    private $model;
-    private $db;
+require_once 'BaseController.php';
 
-    public function __construct() {
-        $database = new Database();
-        $this->db = $database->getConnection();
+class AdminSettingController extends BaseController { // Inherit BaseController for loadAdminView
+    private $model;
+
+    public function __construct($db_connection) {
+        parent::__construct($db_connection);
         $this->model = new SettingModel($this->db);
     }
 
     public function index() {
-        // Xử lý khi người dùng nhấn nút "Lưu" (POST request)
+        // Handle POST Request
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->saveSettings();
+            return;
         }
 
-        // Lấy dữ liệu cũ để hiển thị ra form
+        // Get current settings
         $settings = $this->model->getInfo();
         
-        // Gọi View để hiển thị
-        include ROOT_PATH . '/views/admin/settings.php';
+        // Use loadAdminView from BaseController to keep layout consistent
+        $this->loadAdminView('admin/settings', [
+            'settings' => $settings,
+            'page_title' => 'Cấu hình Website'
+        ]);
     }
 
     private function saveSettings() {
         $id = $_POST['id'];
         $currentLogo = $_POST['current_logo'];
-        $logoPath = $currentLogo; // Mặc định giữ logo cũ
+        $logoPath = $currentLogo; 
 
-        // --- XỬ LÝ UPLOAD ẢNH ---
+        // Handle Image Upload
         if (isset($_FILES['logo']) && $_FILES['logo']['error'] == 0) {
-            $fileName = basename($_FILES["logo"]["name"]);
-            // Đặt tên file mới để tránh trùng (thêm timestamp)
-            $newFileName = time() . '_' . $fileName;
-            $targetFile = UPLOAD_PATH . $newFileName;
-            
-            // Kiểm tra đuôi file
-            $imageFileType = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+            $uploadDir = ROOT_PATH . '/public/uploads/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
-            if (in_array($imageFileType, $allowed)) {
-                // Di chuyển file từ bộ nhớ tạm vào thư mục D:\XAMPP\htdocs\WEB\public\uploads\
+            $extension = strtolower(pathinfo($_FILES["logo"]["name"], PATHINFO_EXTENSION));
+            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+            if (in_array($extension, $allowed)) {
+                $newFileName = 'logo_' . time() . '.' . $extension;
+                $targetFile = $uploadDir . $newFileName;
+                
                 if (move_uploaded_file($_FILES["logo"]["tmp_name"], $targetFile)) {
-                    $logoPath = $newFileName; // Chỉ lưu tên file vào DB
+                    $logoPath = $newFileName; 
                 }
             }
         }
-        // -------------------------thông tin công ty-------------------------
+
+        // Prepare Data
         $data = [
             'id' => $id,
             'company_name' => $_POST['company_name'],
@@ -56,17 +60,18 @@ class AdminSettingController {
             'email' => $_POST['email'],
             'address' => $_POST['address'],
             'intro_text' => $_POST['intro_text'],
-            'logo_path' => $logoPath
+            'logo_path' => $logoPath,
+            // New Social Fields
+            'facebook_url' => $_POST['facebook_url'] ?? '#',
+            'twitter_url' => $_POST['twitter_url'] ?? '#',
+            'instagram_url' => $_POST['instagram_url'] ?? '#'
         ];
 
         if ($this->model->updateInfo($data)) {
-            $message = "Cập nhật thành công!";
+            echo "<script>alert('Cập nhật thành công!'); location.href='index.php?page=admin_settings';</script>";
         } else {
-            $error = "Có lỗi xảy ra!";
+            echo "<script>alert('Có lỗi xảy ra!'); location.href='index.php?page=admin_settings';</script>";
         }
-        
-        // Reload lại trang để thấy thay đổi
-        header("Location: index.php?page=admin_settings");
     }
 }
 ?>

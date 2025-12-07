@@ -27,7 +27,18 @@ $cartCount = $cartCount ?? 0;
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-light">
             <a class="navbar-brand" href="index.php?page=home">
-                <strong class="text-primary"><?php echo htmlspecialchars($settings['company_name']); ?></strong>
+                <?php 
+                    // Check if logo is set and file exists
+                    $logoPath = 'public/uploads/' . ($settings['logo_path'] ?? '');
+                    if (!empty($settings['logo_path']) && file_exists($logoPath)): 
+                ?>
+                    <img src="<?php echo htmlspecialchars($logoPath); ?>" 
+                         alt="<?php echo htmlspecialchars($settings['company_name']); ?>" 
+                         height="40" 
+                         class="d-inline-block align-text-top">
+                <?php else: ?>
+                    <strong class="text-primary"><?php echo htmlspecialchars($settings['company_name']); ?></strong>
+                <?php endif; ?>
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,63 +84,63 @@ $cartCount = $cartCount ?? 0;
 
                     <?php if (isset($_SESSION['user_id'])): ?>
                         
-<li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" 
-       href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" 
+                               href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 
-        <?php 
-            $avatar = $_SESSION['user_avatar'] ?? null; 
-            // Ensure correct path
-            $avatarPath = (!empty($avatar)) ? htmlspecialchars($avatar) : null;
-        ?>
+                                <?php 
+                                    $avatar = $_SESSION['user_avatar'] ?? null; 
+                                    // Ensure correct path
+                                    $avatarPath = (!empty($avatar)) ? htmlspecialchars($avatar) : null;
+                                ?>
 
-        <?php if ($avatarPath && file_exists($avatarPath)): ?>
-            <img src="<?php echo $avatarPath; ?>" 
-                 alt="Avatar" 
-                 class="rounded-circle shadow-sm"
-                 style="width: 32px; height: 32px; object-fit: cover;">
-        <?php else: ?>
-            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center shadow-sm" 
-                 style="width: 32px; height: 32px; font-weight: bold; font-size: 14px;">
-                <?php echo strtoupper(substr($_SESSION['user_name'], 0, 1)); ?>
-            </div>
-        <?php endif; ?>
+                                <?php if ($avatarPath && file_exists($avatarPath)): ?>
+                                    <img src="<?php echo $avatarPath; ?>" 
+                                         alt="Avatar" 
+                                         class="rounded-circle shadow-sm"
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                <?php else: ?>
+                                    <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center shadow-sm" 
+                                         style="width: 32px; height: 32px; font-weight: bold; font-size: 14px;">
+                                        <?php echo strtoupper(substr($_SESSION['user_name'], 0, 1)); ?>
+                                    </div>
+                                <?php endif; ?>
 
-        <span class="fw-medium"><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
+                                <span class="fw-medium"><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
 
-    </a>
+                            </a>
 
-    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="navbarDropdown">
-        
-        <?php if ($_SESSION['user_role'] === 'admin'): ?>
-            <li>
-                <a class="dropdown-item text-danger fw-bold" href="index.php?page=admin_dashboard">
-                    <i class="bi bi-speedometer2 me-2"></i> Quản trị (Admin)
-                </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-        <?php endif; ?>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="navbarDropdown">
+                                
+                                <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                                    <li>
+                                        <a class="dropdown-item text-danger fw-bold" href="index.php?page=admin_dashboard">
+                                            <i class="bi bi-speedometer2 me-2"></i> Quản trị (Admin)
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                <?php endif; ?>
 
-        <li>
-            <a class="dropdown-item" href="index.php?page=profile">
-                <i class="bi bi-person-badge me-2"></i> Hồ sơ cá nhân
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item" href="index.php?page=my_orders">
-                <i class="bi bi-box-seam me-2"></i> Đơn hàng của tôi
-            </a>
-        </li>
+                                <li>
+                                    <a class="dropdown-item" href="index.php?page=profile">
+                                        <i class="bi bi-person-badge me-2"></i> Hồ sơ cá nhân
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="index.php?page=my_orders">
+                                        <i class="bi bi-box-seam me-2"></i> Đơn hàng của tôi
+                                    </a>
+                                </li>
 
-        <li><hr class="dropdown-divider"></li>
+                                <li><hr class="dropdown-divider"></li>
 
-        <li>
-            <a class="dropdown-item text-danger" href="index.php?page=logout">
-                <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
-            </a>
-        </li>
-    </ul>
-</li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="index.php?page=logout">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
                     <?php else: ?>
                         

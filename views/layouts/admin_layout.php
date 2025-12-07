@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <title><?php echo $page_title ?? 'Admin Dashboard'; ?> - Admin Panel</title>
-    <!-- CSS files -->
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler-flags.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler-vendors.min.css" rel="stylesheet"/>
@@ -23,7 +22,6 @@
   <body >
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/demo-theme.min.js"></script>
     <div class="page">
-      <!-- Sidebar -->
       <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
         <div class="container-fluid">
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,7 +35,6 @@
           <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">
               
-              <!-- Dashboard -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_dashboard">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -47,7 +44,6 @@
                 </a>
               </li>
 
-              <!-- Products -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_product_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -57,7 +53,6 @@
                 </a>
               </li>
 
-              <!-- Orders -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_order_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -67,7 +62,6 @@
                 </a>
               </li>
 
-              <!-- Users (Tài khoản) -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_user_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -77,7 +71,6 @@
                 </a>
               </li>
 
-              <!-- News -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_news_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -87,7 +80,6 @@
                 </a>
               </li>
 
-              <!-- FAQ -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_faq_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -97,7 +89,6 @@
                 </a>
               </li>
 
-              <!-- Comments -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_comment_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -107,13 +98,21 @@
                 </a>
               </li>
 
-              <!-- Contacts -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_contacts">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
                     <i class="ti ti-mail"></i>
                   </span>
                   <span class="nav-link-title">Liên hệ</span>
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="index.php?page=admin_settings">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-settings"></i>
+                  </span>
+                  <span class="nav-link-title">Cấu hình Website</span>
                 </a>
               </li>
 
@@ -131,7 +130,6 @@
         </div>
       </aside>
 
-      <!-- Navbar -->
       <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none">
         <div class="container-xl">
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
@@ -169,7 +167,6 @@
       </header>
 
       <div class="page-wrapper">
-        <!-- Page Content -->
         <?php 
             // Load the specific view passed from Controller
             if (isset($view) && file_exists(__DIR__ . '/../' . $view . '.php')) {
@@ -194,9 +191,7 @@
         </footer>
       </div>
     </div>
-    <!-- Libs JS -->
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/libs/apexcharts/dist/apexcharts.min.js" defer></script>
-    <!-- Tabler Core -->
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/demo.min.js" defer></script>
   </body>

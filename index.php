@@ -41,9 +41,9 @@ switch ($page) {
     case 'register_submit':
     case 'logout':
     case 'profile':
-    case 'update_profile':   // <--- NEW
-    case 'change_password':  // <--- NEW
-    case 'upload_avatar':    // <--- NEW
+    case 'update_profile':
+    case 'change_password':
+    case 'upload_avatar':
         $controller = loadController('AuthController', 'AuthController');
 
         match ($page) {
@@ -53,9 +53,9 @@ switch ($page) {
             'register_submit' => $controller->handleRegister(),
             'logout'          => $controller->logout(),
             'profile'         => $controller->profile(),
-            'update_profile'  => $controller->updateProfile(),  // <--- NEW
-            'change_password' => $controller->changePassword(), // <--- NEW
-            'upload_avatar'   => $controller->uploadAvatar()    // <--- NEW
+            'update_profile'  => $controller->updateProfile(),
+            'change_password' => $controller->changePassword(),
+            'upload_avatar'   => $controller->uploadAvatar()
         };
         break;
 
@@ -170,6 +170,7 @@ switch ($page) {
 
     // ADMIN SETTINGS -------------------------------------------------
     case 'admin_settings':
+        // Passes $db_connection to AdminSettingController's constructor
         loadController('AdminSettingController', 'AdminSettingController', $db_connection)->index();
         break;
 

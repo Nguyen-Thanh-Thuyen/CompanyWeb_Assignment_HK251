@@ -1,104 +1,113 @@
-<!doctype html>
-<html lang="vi">
-  <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-    <title>Cấu hình Website - Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css" rel="stylesheet"/>
-  </head>
-  <body class="theme-light">
-    <div class="page">
-      <div class="page-wrapper">
-        
-        <div class="page-header d-print-none">
-          <div class="container-xl">
-            <div class="row g-2 align-items-center">
-              <div class="col">
-                <h2 class="page-title">
-                  Quản lý Website
-                </h2>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="page-body">
-            <div class="container-xl">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Cấu hình thông tin Website</h3>
-                            </div>
-                            <div class="card-body">
-                                <form action="" method="POST" enctype="multipart/form-data">
-                                    
-                                    <input type="hidden" name="id" value="<?php echo $settings['id']; ?>">
-                                    <input type="hidden" name="current_logo" value="<?php echo $settings['logo_path']; ?>">
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Tên công ty / Doanh nghiệp</label>
-                                        <input type="text" class="form-control" name="company_name" value="<?php echo $settings['company_name']; ?>" required>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Logo hiện tại</label>
-                                        <br>
-                                        <?php if(!empty($settings['logo_path'])): ?>
-                                            <img src="<?php echo BASE_URL . '/public/uploads/' . $settings['logo_path']; ?>" width="150">
-                                        <?php endif; ?>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Thay đổi Logo</label>
-                                        <input type="file" class="form-control" name="logo">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Số điện thoại</label>
-                                        <input type="text" class="form-control" name="phone_number" value="<?php echo $settings['phone_number']; ?>">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Địa chỉ</label>
-                                        <input type="text" class="form-control" name="address" value="<?php echo $settings['address']; ?>">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Giới thiệu về công ty</label>
-                                        <textarea class="form-control" name="intro_text" rows="5"><?php echo $settings['intro_text']; ?></textarea>
-                                    </div>
-
-                                    <div class="form-footer">
-                                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Navigation Buttons -->
-                <div class="row mb-3 mt-3"> <div class="col-12 d-flex justify-content-between align-items-center">                        
-                        <div class="btn-group">                            
-                            <a href="index.php?page=admin_settings" class="btn btn-primary">
-                                Cấu hình Website
-                            </a>
-                            <a href="index.php?page=admin_contacts" class="btn btn-white">
-                                Quản lý Liên hệ
-                            </a>                            
-                        </div>
-                        <a href="index.php?page=home" class="btn btn-outline-secondary">
-                                ← Trở về Trang chủ
-                        </a>                                    
-                    </div>
-                </div>
-                <!-- end Navigation Buttons -->
-            </div>
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <h2 class="page-title">Cấu hình Website</h2>
       </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
-  </body>
-</html>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container-xl">
+    <div class="row row-cards">
+      <div class="col-12">
+        <form action="" method="POST" enctype="multipart/form-data" class="card">
+            <div class="card-header">
+                <h4 class="card-title">Thông tin chung</h4>
+            </div>
+            <div class="card-body">
+                <input type="hidden" name="id" value="<?php echo $settings['id']; ?>">
+                <input type="hidden" name="current_logo" value="<?php echo $settings['logo_path']; ?>">
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Tên công ty / Doanh nghiệp</label>
+                            <input type="text" class="form-control" name="company_name" value="<?php echo htmlspecialchars($settings['company_name']); ?>" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Email liên hệ</label>
+                            <input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($settings['email']); ?>">
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Số điện thoại</label>
+                            <input type="text" class="form-control" name="phone_number" value="<?php echo htmlspecialchars($settings['phone_number']); ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Địa chỉ</label>
+                            <input type="text" class="form-control" name="address" value="<?php echo htmlspecialchars($settings['address']); ?>">
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">Logo Website</label>
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <?php if(!empty($settings['logo_path'])): ?>
+                                        <span class="avatar avatar-xl" style="background-image: url('public/uploads/<?php echo $settings['logo_path']; ?>')"></span>
+                                    <?php else: ?>
+                                        <span class="avatar avatar-xl">N/A</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="col">
+                                    <input type="file" class="form-control" name="logo">
+                                    <div class="form-text">Định dạng hỗ trợ: jpg, png, webp. Kích thước tối đa: 2MB.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">Giới thiệu ngắn (Footer)</label>
+                            <textarea class="form-control" name="intro_text" rows="3"><?php echo htmlspecialchars($settings['intro_text']); ?></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-header border-top">
+                <h4 class="card-title">Mạng xã hội</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group mb-2">
+                            <span class="input-group-text"><i class="ti ti-brand-facebook"></i></span>
+                            <input type="text" class="form-control" name="facebook_url" value="<?php echo htmlspecialchars($settings['facebook_url'] ?? ''); ?>" placeholder="https://facebook.com/...">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group mb-2">
+                            <span class="input-group-text"><i class="ti ti-brand-twitter"></i></span>
+                            <input type="text" class="form-control" name="twitter_url" value="<?php echo htmlspecialchars($settings['twitter_url'] ?? ''); ?>" placeholder="https://twitter.com/...">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group mb-2">
+                            <span class="input-group-text"><i class="ti ti-brand-instagram"></i></span>
+                            <input type="text" class="form-control" name="instagram_url" value="<?php echo htmlspecialchars($settings['instagram_url'] ?? ''); ?>" placeholder="https://instagram.com/...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer text-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy me-2"></i> Lưu cấu hình
+                </button>
+            </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
