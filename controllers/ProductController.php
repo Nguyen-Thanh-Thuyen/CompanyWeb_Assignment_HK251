@@ -3,13 +3,13 @@
 
 require_once ROOT_PATH . '/models/ProductModel.php';
 require_once ROOT_PATH . '/models/CategoryModel.php';
-require_once ROOT_PATH . '/models/CommentModel.php'; // <--- Required for comments
+require_once ROOT_PATH . '/models/CommentModel.php'; 
 require_once 'BaseController.php'; 
 
 class ProductController extends BaseController {
     private $productModel;
     private $categoryModel;
-    private $commentModel; // <--- Property for comments
+    private $commentModel;
 
     public function __construct() {
         $database = new Database();
@@ -18,7 +18,7 @@ class ProductController extends BaseController {
 
         $this->productModel = new ProductModel($this->db);
         $this->categoryModel = new CategoryModel($this->db);
-        $this->commentModel = new CommentModel($this->db); // <--- Initialize Model
+        $this->commentModel = new CommentModel($this->db);
     }
 
     // =========================================================================
@@ -104,7 +104,7 @@ class ProductController extends BaseController {
     }
 
     /**
-     * ACTION: Add Comment (This was the missing method)
+     * ACTION: Add Comment
      * Route: index.php?page=add_comment
      */
     public function addComment() {
@@ -213,6 +213,11 @@ class ProductController extends BaseController {
             }
         }
 
+        // --- FIX STARTS HERE ---
+        // Map form status ('active'/'inactive') to model's expected format (1/0)
+        $statusInput = $_POST['status'] ?? 'active';
+        $isActive = ($statusInput === 'active') ? 1 : 0;
+
         $productData = [
             'category_id' => !empty($_POST['category_id']) ? intval($_POST['category_id']) : null,
             'name' => htmlspecialchars(trim($_POST['name'])),
@@ -220,8 +225,9 @@ class ProductController extends BaseController {
             'price' => floatval($_POST['price']),
             'stock' => intval($_POST['stock']),
             'image' => $imagePath,
-            'status' => $_POST['status'] ?? 'active'
+            'is_active' => $isActive // Key changed to match ProductModel
         ];
+        // --- FIX ENDS HERE ---
 
         $productId = $this->productModel->create($productData);
 
@@ -286,6 +292,10 @@ class ProductController extends BaseController {
             }
         }
 
+        // --- FIX STARTS HERE ---
+        $statusInput = $_POST['status'] ?? 'active';
+        $isActive = ($statusInput === 'active') ? 1 : 0;
+
         $productData = [
             'category_id' => !empty($_POST['category_id']) ? intval($_POST['category_id']) : null,
             'name' => htmlspecialchars(trim($_POST['name'])),
@@ -293,8 +303,9 @@ class ProductController extends BaseController {
             'price' => floatval($_POST['price']),
             'stock' => intval($_POST['stock']),
             'image' => $imagePath,
-            'status' => $_POST['status'] ?? 'active'
+            'is_active' => $isActive // Key changed to match ProductModel
         ];
+        // --- FIX ENDS HERE ---
 
         $result = $this->productModel->update($productId, $productData);
 
@@ -381,3 +392,4 @@ class ProductController extends BaseController {
         return false;
     }
 }
+?>

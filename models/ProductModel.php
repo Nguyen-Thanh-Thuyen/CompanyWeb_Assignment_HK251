@@ -17,24 +17,17 @@ class ProductModel
     
     // --- USER/GUEST METHODS ---
     
-    /**
-     * Lấy danh sách sản phẩm, giới hạn số lượng (Dùng cho Homepage).
-     * KHẮC PHỤC: Sử dụng 'p.image' thay vì 'p.image_path'
-     * KHẮC PHỤC: Sử dụng điều kiện Soft Delete (p.deleted_at IS NULL) hoặc p.is_active = 1
-     * @param int $limit Số lượng sản phẩm muốn lấy.
-     * @return array Danh sách sản phẩm
-     */
     public function getProducts($limit = 8)
     {
         try {
             $query = "SELECT 
-                        p.id, p.name, p.price, p.image, p.stock, c.name as category_name
+                        p.id, p.name, p.price, p.image, p.stock, c.name as category_name, p.slug
                       FROM 
                         " . $this->table . " p
                       LEFT JOIN
                         categories c ON p.category_id = c.id
                       WHERE 
-                        p.deleted_at IS NULL AND p.is_active = TRUE -- Chỉ lấy sản phẩm chưa xóa và đang hoạt động
+                        p.deleted_at IS NULL AND p.is_active = 1
                       ORDER BY 
                         p.created_at DESC 
                       LIMIT 
@@ -52,73 +45,54 @@ class ProductModel
         }
     }
     
-    /**
-     * Lấy danh sách sản phẩm với phân trang, tìm kiếm VÀ LỌC DANH MỤC.
-     * ĐỒNG BỘ: Thêm $categoryId vào chữ ký phương thức
-     * KHẮC PHỤC: Sử dụng điều kiện Soft Delete (p.deleted_at IS NULL)
-     */
-/**
- * Lấy danh sách sản phẩm với phân trang, tìm kiếm VÀ LỌC DANH MỤC.
- * SỬA LỖI: Chuyển sang bindValue/bindParam thủ công để đảm bảo LIMIT/OFFSET là INT.
- */
-public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
-{
-    try {
-        $sql = "SELECT p.*, c.name as category_name 
-                FROM {$this->table} p 
-                LEFT JOIN categories c ON p.category_id = c.id 
-                WHERE p.deleted_at IS NULL AND p.is_active = TRUE";
-
-        $binds = [];
-        $paramIndex = 1;
-        $bindMap = []; // Map để lưu vị trí bind
-
-        if (!empty($keyword)) {
-            $sql .= " AND (p.name LIKE ? OR p.description LIKE ?)";
-            $searchTerm = "%{$keyword}%";
-            $binds[$paramIndex++] = $searchTerm;
-            $binds[$paramIndex++] = $searchTerm;
-        }
-        
-        // Lọc theo Danh mục
-        if ($categoryId > 0) {
-            $sql .= " AND p.category_id = ?";
-            $binds[$paramIndex++] = $categoryId;
-        }
-
-        // Thêm LIMIT và OFFSET placeholders (sẽ là hai dấu ? cuối cùng)
-        $sql .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?"; 
-        
-        $stmt = $this->conn->prepare($sql);
-
-        // Bind các tham số WHERE/LỌC
-        $currentIndex = 1;
-        foreach ($binds as $value) {
-            $stmt->bindValue($currentIndex++, $value);
-        }
-        
-        // Bind LIMIT và OFFSET với kiểu INT
-        $stmt->bindValue($currentIndex++, $limit, PDO::PARAM_INT);
-        $stmt->bindValue($currentIndex++, $offset, PDO::PARAM_INT);
-        
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("ProductModel::search() Error: " . $e->getMessage());
-        return [];
-    }
-}
-
-    /**
-     * Đếm tổng số sản phẩm (cho pagination)
-     * ĐỒNG BỘ: Thêm $categoryId vào chữ ký phương thức
-     * KHẮC PHỤC: Sử dụng điều kiện Soft Delete (deleted_at IS NULL)
-     */
-    public function count($keyword = '', $categoryId = 0) // <--- CẬP NHẬT
+    public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
     {
         try {
-            $sql = "SELECT COUNT(*) FROM {$this->table} WHERE deleted_at IS NULL AND is_active = TRUE"; // <--- Lọc trạng thái
+            $sql = "SELECT p.*, c.name as category_name 
+                    FROM {$this->table} p 
+                    LEFT JOIN categories c ON p.category_id = c.id 
+                    WHERE p.deleted_at IS NULL AND p.is_active = 1";
+
+            $binds = [];
+            $paramIndex = 1;
+
+            if (!empty($keyword)) {
+                $sql .= " AND (p.name LIKE ? OR p.description LIKE ?)";
+                $searchTerm = "%{$keyword}%";
+                $binds[] = $searchTerm;
+                $binds[] = $searchTerm;
+            }
+            
+            if ($categoryId > 0) {
+                $sql .= " AND p.category_id = ?";
+                $binds[] = $categoryId;
+            }
+
+            $sql .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?"; 
+            
+            $stmt = $this->conn->prepare($sql);
+
+            $currentIndex = 1;
+            foreach ($binds as $value) {
+                $stmt->bindValue($currentIndex++, $value);
+            }
+            
+            $stmt->bindValue($currentIndex++, $limit, PDO::PARAM_INT);
+            $stmt->bindValue($currentIndex++, $offset, PDO::PARAM_INT);
+            
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("ProductModel::search() Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function count($keyword = '', $categoryId = 0)
+    {
+        try {
+            $sql = "SELECT COUNT(*) FROM {$this->table} WHERE deleted_at IS NULL AND is_active = 1";
             $params = [];
 
             if (!empty($keyword)) {
@@ -128,8 +102,7 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
                 $params[] = $searchTerm;
             }
             
-            // Lọc theo Danh mục
-            if ($categoryId > 0) { // <--- THÊM LOGIC LỌC CATEGORY
+            if ($categoryId > 0) {
                 $sql .= " AND category_id = ?";
                 $params[] = $categoryId;
             }
@@ -144,9 +117,6 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
         }
     }
 
-    /**
-     * Lấy chi tiết 1 sản phẩm
-     */
     public function getById($id)
     {
         try {
@@ -165,17 +135,13 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
         }
     }
 
-    /**
-     * Lấy sản phẩm liên quan (cùng category)
-     * KHẮC PHỤC: Sử dụng điều kiện Soft Delete (deleted_at IS NULL)
-     */
     public function getRelated($productId, $categoryId, $limit = 4)
     {
         try {
             $sql = "SELECT * FROM {$this->table} 
                     WHERE category_id = ? 
                     AND id != ? 
-                    AND deleted_at IS NULL AND is_active = TRUE 
+                    AND deleted_at IS NULL AND is_active = 1 
                     ORDER BY RAND() 
                     LIMIT ?";
 
@@ -191,26 +157,27 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
 
     // --- ADMIN CRUD METHODS ---
 
-    /**
-     * ADMIN: Tạo sản phẩm mới
-     * ĐỒNG BỘ: Sử dụng 'is_active' thay vì 'status'
-     */
     public function create($data)
     {
         try {
+            // 1. Tự động tạo slug từ tên sản phẩm
+            $slug = $this->generateUniqueSlug($data['name']);
+
+            // 2. Thêm slug vào câu lệnh INSERT
             $sql = "INSERT INTO {$this->table} 
-                    (category_id, name, description, price, stock, image, is_active) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)"; // <--- CẬP NHẬT cột 'is_active'
+                    (category_id, name, slug, description, price, stock, image, is_active) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $this->conn->prepare($sql);
             $result = $stmt->execute([
                 $data['category_id'],
                 $data['name'],
+                $slug, // Giá trị slug
                 $data['description'],
                 $data['price'],
                 $data['stock'],
                 $data['image'] ?? null,
-                $data['is_active'] ?? TRUE // <--- CẬP NHẬT biến 'is_active' (TRUE/FALSE)
+                $data['is_active'] ?? 1
             ]);
 
             return $result ? $this->conn->lastInsertId() : false;
@@ -220,31 +187,31 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
         }
     }
 
-    /**
-     * ADMIN: Cập nhật sản phẩm
-     * ĐỒNG BỘ: Sử dụng 'is_active' thay vì 'status'
-     */
     public function update($id, $data)
     {
         try {
+            // Tự động cập nhật slug nếu tên thay đổi (hoặc giữ nguyên nếu muốn)
+            $slug = $this->generateUniqueSlug($data['name'], $id);
+
             $sql = "UPDATE {$this->table} SET 
                     category_id = ?, 
                     name = ?, 
+                    slug = ?,
                     description = ?, 
                     price = ?, 
                     stock = ?, 
-                    is_active = ?"; // <--- CẬP NHẬT cột 'is_active'
+                    is_active = ?";
 
             $params = [
                 $data['category_id'],
                 $data['name'],
+                $slug,
                 $data['description'],
                 $data['price'],
                 $data['stock'],
-                $data['is_active'] ?? TRUE // <--- CẬP NHẬT biến 'is_active'
+                $data['is_active'] ?? 1
             ];
 
-            // Nếu có update ảnh
             if (isset($data['image']) && !empty($data['image'])) {
                 $sql .= ", image = ?";
                 $params[] = $data['image'];
@@ -261,15 +228,10 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
         }
     }
 
-    /**
-     * ADMIN: Xóa sản phẩm (soft delete)
-     * KHẮC PHỤC: Sử dụng cột 'deleted_at' thay vì 'status' = 'inactive'
-     */
     public function delete($id)
     {
         try {
-            // Soft delete: set deleted_at to current timestamp
-            $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = ?"; // <--- CẬP NHẬT LOGIC SOFT DELETE
+            $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
             return $stmt->execute([$id]);
         } catch (PDOException $e) {
@@ -278,19 +240,15 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
         }
     }
 
-    /**
-     * ADMIN: Lấy tất cả sản phẩm (kể cả đã xóa) cho admin
-     */
     public function getAllForAdmin($keyword = '', $offset = 0, $limit = 20)
     {
         try {
             $sql = "SELECT p.*, c.name as category_name 
                     FROM {$this->table} p 
                     LEFT JOIN categories c ON p.category_id = c.id 
-                    WHERE 1=1";
+                    WHERE 1=1"; // Lấy cả sản phẩm đã xóa (nếu admin cần), hoặc thêm deleted_at IS NULL tùy logic
 
             $params = [];
-            // ... (Logic tìm kiếm giữ nguyên) ...
             if (!empty($keyword)) {
                 $sql .= " AND (p.name LIKE ? OR p.description LIKE ?)";
                 $searchTerm = "%{$keyword}%";
@@ -312,12 +270,8 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
         }
     }
 
-    /**
-     * ADMIN: Đếm tổng sản phẩm (kể cả đã xóa)
-     */
     public function countAll($keyword = '')
     {
-        // ... (Logic đếm giữ nguyên) ...
         try {
             $sql = "SELECT COUNT(*) FROM {$this->table} WHERE 1=1";
             $params = [];
@@ -339,14 +293,10 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
         }
     }
 
-    /**
-     * Kiểm tra stock trước khi add to cart
-     * KHẮC PHỤC: Sử dụng điều kiện Soft Delete (deleted_at IS NULL)
-     */
     public function checkStock($productId, $quantity)
     {
         try {
-            $sql = "SELECT stock FROM {$this->table} WHERE id = ? AND deleted_at IS NULL AND is_active = TRUE"; // <--- Lọc trạng thái
+            $sql = "SELECT stock FROM {$this->table} WHERE id = ? AND deleted_at IS NULL AND is_active = 1";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$productId]);
 
@@ -358,4 +308,48 @@ public function search($keyword = '', $categoryId = 0, $offset = 0, $limit = 12)
             return false;
         }
     }
+
+    // --- HELPER: TẠO SLUG & KIỂM TRA TRÙNG LẶP ---
+    private function generateUniqueSlug($name, $excludeId = null) {
+        $slug = $this->createSlug($name);
+        $originalSlug = $slug;
+        $count = 1;
+
+        // Kiểm tra xem slug đã tồn tại chưa
+        while ($this->slugExists($slug, $excludeId)) {
+            $slug = $originalSlug . '-' . $count;
+            $count++;
+        }
+
+        return $slug;
+    }
+
+    private function slugExists($slug, $excludeId = null) {
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE slug = ?";
+        $params = [$slug];
+
+        if ($excludeId) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeId;
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    private function createSlug($str) {
+        $str = trim(mb_strtolower($str));
+        $str = preg_replace('/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/', 'a', $str);
+        $str = preg_replace('/(è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ)/', 'e', $str);
+        $str = preg_replace('/(ì|í|ị|ỉ|ĩ)/', 'i', $str);
+        $str = preg_replace('/(ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ)/', 'o', $str);
+        $str = preg_replace('/(ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ)/', 'u', $str);
+        $str = preg_replace('/(ỳ|ý|ỵ|ỷ|ỹ)/', 'y', $str);
+        $str = preg_replace('/(đ)/', 'd', $str);
+        $str = preg_replace('/[^a-z0-9-\s]/', '', $str);
+        $str = preg_replace('/([\s]+)/', '-', $str);
+        return $str;
+    }
 }
+?>

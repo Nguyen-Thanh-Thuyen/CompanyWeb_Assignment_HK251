@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thêm sản phẩm - Admin</title>
     
-    <!-- Tabler CSS -->
-    <link href="tabler-1.4.0/dist/css/tabler.min.css" rel="stylesheet"/>
-    <link href="tabler-1.4.0/dist/css/tabler-icons.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
     
     <style>
         .image-preview {
@@ -22,11 +21,9 @@
 </head>
 <body>
     <div class="page">
-        <!-- Sidebar -->
         <?php include __DIR__ . '/../../includes/admin_sidebar.php'; ?>
 
         <div class="page-wrapper">
-            <!-- Page Header -->
             <div class="page-header d-print-none">
                 <div class="container-xl">
                     <div class="row g-2 align-items-center">
@@ -36,35 +33,51 @@
                         </div>
                         <div class="col-auto ms-auto">
                             <a href="index.php?page=admin_product_list" class="btn btn-outline-secondary">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="5" y1="12" x2="19" y2="12"></line><line x1="5" y1="12" x2="11" y2="18"></line><line x1="5" y1="12" x2="11" y2="6"></line></svg>
-                                Quay lại
+                                <i class="ti ti-arrow-left"></i> Quay lại
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Page Body -->
             <div class="page-body">
                 <div class="container-xl">
                     <div class="row">
                         <div class="col-md-8">
+                            
+                            <?php if (isset($_SESSION['success'])): ?>
+                                <div class="alert alert-success alert-dismissible" role="alert">
+                                    <div class="d-flex">
+                                        <div><i class="ti ti-check me-2"></i></div>
+                                        <div><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
+                                    </div>
+                                    <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if (isset($_SESSION['error'])): ?>
+                                <div class="alert alert-danger alert-dismissible" role="alert">
+                                    <div class="d-flex">
+                                        <div><i class="ti ti-alert-circle me-2"></i></div>
+                                        <div><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
+                                    </div>
+                                    <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+                                </div>
+                            <?php endif; ?>
                             <form method="POST" action="index.php?page=admin_product_create" enctype="multipart/form-data" id="productForm">
                                 <div class="card">
                                     <div class="card-header">
                                         <h3 class="card-title">Thông tin sản phẩm</h3>
                                     </div>
                                     <div class="card-body">
-                                        <!-- Display errors -->
+                                        
                                         <?php if (isset($_SESSION['errors']) && !empty($_SESSION['errors'])): ?>
                                             <div class="alert alert-danger alert-dismissible" role="alert">
                                                 <div class="d-flex">
+                                                    <div><i class="ti ti-alert-circle me-2"></i></div>
                                                     <div>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                                    </div>
-                                                    <div>
-                                                        <h4 class="alert-title">Có lỗi xảy ra!</h4>
-                                                        <ul class="mb-0">
+                                                        <h4 class="alert-title">Vui lòng kiểm tra lại dữ liệu!</h4>
+                                                        <ul class="mb-0 ps-3">
                                                             <?php foreach ($_SESSION['errors'] as $error): ?>
                                                                 <li><?php echo htmlspecialchars($error); ?></li>
                                                             <?php endforeach; ?>
@@ -76,7 +89,6 @@
                                             <?php unset($_SESSION['errors']); ?>
                                         <?php endif; ?>
 
-                                        <!-- Product Name -->
                                         <div class="mb-3">
                                             <label class="form-label required">Tên sản phẩm</label>
                                             <input type="text" 
@@ -88,21 +100,21 @@
                                             <small class="form-hint">Tên sản phẩm hiển thị cho khách hàng</small>
                                         </div>
 
-                                        <!-- Category -->
                                         <div class="mb-3">
                                             <label class="form-label required">Danh mục</label>
                                             <select class="form-select" name="category_id" required>
                                                 <option value="">-- Chọn danh mục --</option>
-                                                <?php foreach ($categories as $category): ?>
-                                                    <option value="<?php echo $category['id']; ?>"
-                                                            <?php echo (isset($_SESSION['old']['category_id']) && $_SESSION['old']['category_id'] == $category['id']) ? 'selected' : ''; ?>>
-                                                        <?php echo htmlspecialchars($category['name']); ?>
-                                                    </option>
-                                                <?php endforeach; ?>
+                                                <?php if (!empty($categories)): ?>
+                                                    <?php foreach ($categories as $category): ?>
+                                                        <option value="<?php echo $category['id']; ?>"
+                                                                <?php echo (isset($_SESSION['old']['category_id']) && $_SESSION['old']['category_id'] == $category['id']) ? 'selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($category['name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
                                             </select>
                                         </div>
 
-                                        <!-- Description -->
                                         <div class="mb-3">
                                             <label class="form-label">Mô tả sản phẩm</label>
                                             <textarea class="form-control" 
@@ -113,7 +125,6 @@
                                         </div>
 
                                         <div class="row">
-                                            <!-- Price -->
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label required">Giá bán (₫)</label>
                                                 <input type="number" 
@@ -126,7 +137,6 @@
                                                        required>
                                             </div>
 
-                                            <!-- Stock -->
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label required">Số lượng tồn kho</label>
                                                 <input type="number" 
@@ -139,7 +149,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- Status -->
                                         <div class="mb-3">
                                             <label class="form-label">Trạng thái</label>
                                             <div>
@@ -163,7 +172,6 @@
                                             <small class="form-hint">Sản phẩm "Ẩn" sẽ không hiển thị trên trang chủ</small>
                                         </div>
 
-                                        <!-- Image Upload -->
                                         <div class="mb-3">
                                             <label class="form-label">Hình ảnh sản phẩm</label>
                                             <input type="file" 
@@ -175,7 +183,6 @@
                                                 Định dạng: JPG, PNG, GIF. Kích thước tối đa: 2MB
                                             </small>
                                             
-                                            <!-- Image Preview -->
                                             <div>
                                                 <img id="imagePreview" class="image-preview" alt="Preview">
                                             </div>
@@ -185,15 +192,13 @@
                                     <div class="card-footer text-end">
                                         <button type="reset" class="btn btn-link">Xóa form</button>
                                         <button type="submit" class="btn btn-primary">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                            Thêm sản phẩm
+                                            <i class="ti ti-plus"></i> Thêm sản phẩm
                                         </button>
                                     </div>
                                 </div>
                             </form>
                         </div>
 
-                        <!-- Sidebar Help -->
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
@@ -202,26 +207,11 @@
                                 <div class="card-body">
                                     <h4 class="card-title">Lưu ý khi thêm sản phẩm</h4>
                                     <ul class="list-unstyled space-y-1">
-                                        <li>
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><polyline points="9 11 12 14 20 6"></polyline><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"></path></svg>
-                                            Tên sản phẩm nên ngắn gọn, dễ hiểu
-                                        </li>
-                                        <li>
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><polyline points="9 11 12 14 20 6"></polyline><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"></path></svg>
-                                            Mô tả chi tiết giúp tăng khả năng bán hàng
-                                        </li>
-                                        <li>
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><polyline points="9 11 12 14 20 6"></polyline><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"></path></svg>
-                                            Hình ảnh rõ ràng, chất lượng cao
-                                        </li>
-                                        <li>
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><polyline points="9 11 12 14 20 6"></polyline><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"></path></svg>
-                                            Giá cả cạnh tranh với thị trường
-                                        </li>
-                                        <li>
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><polyline points="9 11 12 14 20 6"></polyline><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"></path></svg>
-                                            Cập nhật tồn kho chính xác
-                                        </li>
+                                        <li><i class="ti ti-check text-primary"></i> Tên sản phẩm nên ngắn gọn, dễ hiểu</li>
+                                        <li><i class="ti ti-check text-primary"></i> Mô tả chi tiết giúp tăng khả năng bán hàng</li>
+                                        <li><i class="ti ti-check text-primary"></i> Hình ảnh rõ ràng, chất lượng cao</li>
+                                        <li><i class="ti ti-check text-primary"></i> Giá cả cạnh tranh với thị trường</li>
+                                        <li><i class="ti ti-check text-primary"></i> Cập nhật tồn kho chính xác</li>
                                     </ul>
                                 </div>
                             </div>
@@ -230,8 +220,7 @@
                                 <div class="card-status-top bg-blue"></div>
                                 <div class="card-body">
                                     <h4 class="card-title">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon text-blue" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12.01" y2="8"></line><polyline points="11 12 12 12 12 16 13 16"></polyline></svg>
-                                        Thông tin
+                                        <i class="ti ti-info-circle text-blue"></i> Thông tin
                                     </h4>
                                     <p class="text-muted">Sau khi thêm sản phẩm thành công, bạn có thể chỉnh sửa thông tin bất kỳ lúc nào.</p>
                                 </div>
@@ -243,11 +232,9 @@
         </div>
     </div>
 
-    <!-- Clear old session data -->
     <?php unset($_SESSION['old']); ?>
 
-    <!-- Tabler JS -->
-    <script src="tabler-1.4.0/dist/js/tabler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
 
     <script>
     // Image preview
@@ -290,13 +277,13 @@
         const price = parseFloat(document.querySelector('input[name="price"]').value);
         const stock = parseInt(document.querySelector('input[name="stock"]').value);
         
-        if (price <= 0) {
+        if (isNaN(price) || price <= 0) {
             e.preventDefault();
             alert('Giá sản phẩm phải lớn hơn 0');
             return false;
         }
         
-        if (stock < 0) {
+        if (isNaN(stock) || stock < 0) {
             e.preventDefault();
             alert('Số lượng tồn kho không thể âm');
             return false;

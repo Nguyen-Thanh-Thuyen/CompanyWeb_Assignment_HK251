@@ -1,4 +1,3 @@
-<!-- views/product/detail.php -->
 <div class="container my-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -9,7 +8,6 @@
     </nav>
 
     <div class="row">
-        <!-- Product Image -->
         <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm">
                 <?php 
@@ -22,7 +20,6 @@
             </div>
         </div>
 
-        <!-- Product Info -->
         <div class="col-md-6">
             <h1 class="fw-bold"><?php echo htmlspecialchars($product['name']); ?></h1>
             <div class="mb-3">
@@ -49,7 +46,6 @@
         </div>
     </div>
 
-    <!-- REVIEWS SECTION -->
     <div class="row mt-5">
         <div class="col-12">
             <div class="card shadow-sm">
@@ -58,7 +54,6 @@
                 </div>
                 <div class="card-body">
                     
-                    <!-- Comment Form -->
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <form action="index.php?page=add_comment" method="POST" class="mb-5 p-4 bg-light rounded">
                             <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
@@ -94,13 +89,12 @@
                         </div>
                     <?php endif; ?>
 
-                    <!-- Comments List -->
                     <?php if (empty($comments)): ?>
                         <p class="text-muted text-center py-3">Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
                     <?php else: ?>
                         <?php foreach ($comments as $comment): ?>
                             <div class="border-bottom pb-3 mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div class="d-flex align-items-center">
                                         <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center me-2" style="width: 40px; height: 40px;">
                                             <?php echo strtoupper(substr($comment['user_name'], 0, 1)); ?>
@@ -112,7 +106,18 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?></small>
+                                    
+                                    <div class="text-end">
+                                        <div class="text-muted small"><?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?></div>
+                                        
+                                        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                                            <button class="btn btn-link text-danger p-0 small delete-comment-btn" 
+                                                    data-id="<?php echo $comment['id']; ?>" 
+                                                    style="text-decoration: none; font-size: 0.85rem;">
+                                                <i class="bi bi-trash"></i> Xóa
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                                 <p class="mb-0 text-secondary ps-5">
                                     <?php echo nl2br(htmlspecialchars($comment['content'])); ?>
@@ -126,7 +131,6 @@
         </div>
     </div>
 
-    <!-- Related Products -->
     <div class="row mt-5">
         <h3 class="mb-4">Sản phẩm liên quan</h3>
         <?php foreach ($relatedProducts as $relProduct): ?>
@@ -154,8 +158,8 @@
     </div>
 </div>
 
-<!-- Simple Add to Cart Script -->
 <script>
+// Add to Cart
 document.querySelectorAll('.add-to-cart').forEach(btn => {
     btn.addEventListener('click', function() {
         const id = this.dataset.id;
@@ -167,6 +171,31 @@ document.querySelectorAll('.add-to-cart').forEach(btn => {
             alert(data.message);
             location.reload();
         });
+    });
+});
+
+// Admin Delete Comment
+document.querySelectorAll('.delete-comment-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if(confirm('Bạn có chắc chắn muốn xóa bình luận này?')) {
+            const id = this.dataset.id;
+            // Uses existing admin endpoint
+            fetch('index.php?page=admin_comment_delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `id=${id}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert('Đã xóa bình luận');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Lỗi xóa bình luận');
+                }
+            })
+            .catch(err => alert('Lỗi kết nối server'));
+        }
     });
 });
 </script>

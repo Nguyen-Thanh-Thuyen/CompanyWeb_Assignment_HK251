@@ -1,5 +1,4 @@
 <!-- views/admin/product/index.php -->
-
 <div class="page-header d-print-none">
   <div class="container-xl">
     <div class="row g-2 align-items-center">
@@ -7,7 +6,6 @@
         <div class="page-pretitle">Admin Panel</div>
         <h2 class="page-title">Sản phẩm</h2>
       </div>
-      <!-- Add New Button -->
       <div class="col-auto ms-auto d-print-none">
         <div class="btn-list">
           <a href="index.php?page=admin_product_create" class="btn btn-primary d-none d-sm-inline-block">
@@ -36,7 +34,6 @@
             kết quả
           </div>
           <div class="ms-auto text-secondary">
-            <!-- Search Form -->
             <form action="index.php" method="GET">
                 <input type="hidden" name="page" value="admin_product_list">
                 <div class="ms-2 d-inline-block">
@@ -59,7 +56,7 @@
               <th>Giá</th>
               <th>Kho</th>
               <th>Trạng thái</th>
-              <th></th>
+              <th class="text-end">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -96,19 +93,18 @@
                         <span class="badge bg-danger me-1"></span> Hết hàng
                     <?php endif; ?>
                   </td>
+                  
                   <td class="text-end">
-                    <span class="dropdown">
-                      <button class="btn dropdown-toggle align-text-top" data-bs-boundary="viewport" data-bs-toggle="dropdown">Hành động</button>
-                      <div class="dropdown-menu dropdown-menu-end">
-                        <a class="dropdown-item" href="index.php?page=admin_product_edit&id=<?php echo $product['id']; ?>">
-                          Sửa
+                    <div class="btn-list flex-nowrap justify-content-end">
+                        <a href="index.php?page=admin_product_edit&id=<?php echo $product['id']; ?>" class="btn btn-white btn-sm">
+                            Sửa
                         </a>
-                        <a class="dropdown-item text-danger delete-btn" href="#" data-id="<?php echo $product['id']; ?>">
-                          Xóa
-                        </a>
-                      </div>
-                    </span>
+                        <button class="btn btn-danger btn-sm delete-btn" data-id="<?php echo $product['id']; ?>">
+                            Xóa
+                        </button>
+                    </div>
                   </td>
+
                 </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -116,7 +112,6 @@
         </table>
       </div>
 
-      <!-- Pagination -->
       <div class="card-footer d-flex align-items-center">
         <p class="m-0 text-secondary">
             Trang <span><?php echo $currentPage; ?></span> / <span><?php echo $totalPages; ?></span>
@@ -145,7 +140,6 @@
   </div>
 </div>
 
-<!-- Simple Delete Script -->
 <script>
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
