@@ -4,11 +4,10 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
-    <title><?php echo $page_title ?? 'Admin Dashboard'; ?> - Tabler</title>
+    <title><?php echo $page_title ?? 'Admin Dashboard'; ?> - Admin Panel</title>
     <!-- CSS files -->
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler-flags.min.css" rel="stylesheet"/>
-    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler-payments.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler-vendors.min.css" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
@@ -37,6 +36,8 @@
           </h1>
           <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">
+              
+              <!-- Dashboard -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_dashboard">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -45,6 +46,8 @@
                   <span class="nav-link-title">Dashboard</span>
                 </a>
               </li>
+
+              <!-- Products -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_product_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -53,6 +56,8 @@
                   <span class="nav-link-title">Sản phẩm</span>
                 </a>
               </li>
+
+              <!-- Orders -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_order_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -61,6 +66,18 @@
                   <span class="nav-link-title">Đơn hàng</span>
                 </a>
               </li>
+
+              <!-- Users (Tài khoản) -->
+              <li class="nav-item">
+                <a class="nav-link" href="index.php?page=admin_user_list">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-users"></i>
+                  </span>
+                  <span class="nav-link-title">Tài khoản</span>
+                </a>
+              </li>
+
+              <!-- News -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_news_list">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -69,7 +86,28 @@
                   <span class="nav-link-title">Tin tức</span>
                 </a>
               </li>
-                            <!-- NEW: Contact Link -->
+
+              <!-- FAQ -->
+              <li class="nav-item">
+                <a class="nav-link" href="index.php?page=admin_faq_list">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-help"></i>
+                  </span>
+                  <span class="nav-link-title">FAQ (Hỏi đáp)</span>
+                </a>
+              </li>
+
+              <!-- Comments -->
+              <li class="nav-item">
+                <a class="nav-link" href="index.php?page=admin_comment_list">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-message"></i>
+                  </span>
+                  <span class="nav-link-title">Bình luận</span>
+                </a>
+              </li>
+
+              <!-- Contacts -->
               <li class="nav-item">
                 <a class="nav-link" href="index.php?page=admin_contacts">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -78,7 +116,8 @@
                   <span class="nav-link-title">Liên hệ</span>
                 </a>
               </li>
-              <li class="nav-item">
+
+              <li class="nav-item mt-3">
                 <a class="nav-link" href="index.php?page=home">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
                     <i class="ti ti-arrow-back-up"></i>
@@ -86,6 +125,7 @@
                   <span class="nav-link-title">Về trang chủ</span>
                 </a>
               </li>
+
             </ul>
           </div>
         </div>
@@ -98,6 +138,14 @@
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="navbar-nav flex-row order-md-last">
+            <div class="d-none d-md-flex">
+              <a href="?theme=dark" class="nav-link px-0 hide-theme-dark" title="Enable dark mode" data-bs-toggle="tooltip" data-bs-placement="bottom">
+                <i class="ti ti-moon" style="font-size: 1.2rem;"></i>
+              </a>
+              <a href="?theme=light" class="nav-link px-0 hide-theme-light" title="Enable light mode" data-bs-toggle="tooltip" data-bs-placement="bottom">
+                <i class="ti ti-sun" style="font-size: 1.2rem;"></i>
+              </a>
+            </div>
             <div class="nav-item dropdown">
               <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
                 <span class="avatar avatar-sm" style="background-image: url(./static/avatars/000m.jpg)">
@@ -122,12 +170,12 @@
 
       <div class="page-wrapper">
         <!-- Page Content -->
-        <?php
+        <?php 
             // Load the specific view passed from Controller
             if (isset($view) && file_exists(__DIR__ . '/../' . $view . '.php')) {
                 require_once __DIR__ . '/../' . $view . '.php';
             }
-    ?>
+        ?>
         
         <footer class="footer footer-transparent d-print-none">
           <div class="container-xl">

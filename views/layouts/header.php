@@ -4,7 +4,7 @@
 // 1. Safe Defaults for Settings
 $settings = $settings ?? ['company_name' => 'E-Commerce MVC']; 
 
-// 2. Safe Defaults for Cart Count (Defensive Programming)
+// 2. Safe Defaults for Cart Count
 $cartCount = $cartCount ?? 0;
 ?>
 <!DOCTYPE html>
@@ -14,7 +14,6 @@ $cartCount = $cartCount ?? 0;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle ?? ($settings['company_name'] . ' | Trang chủ')); ?></title>
     
-    <!-- FAVICON -->
     <link rel="icon" type="image/x-icon" href="public/favicon.ico">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -59,7 +58,6 @@ $cartCount = $cartCount ?? 0;
 
                 <ul class="navbar-nav align-items-center gap-2">
                     
-                    <!-- CART -->
                     <li class="nav-item">
                         <a class="btn btn-outline-primary position-relative" href="index.php?page=cart">
                             <i class="bi bi-cart"></i> Giỏ hàng
@@ -73,56 +71,68 @@ $cartCount = $cartCount ?? 0;
                         </a>
                     </li>
 
-                    <!-- USER DROPDOWN -->
                     <?php if (isset($_SESSION['user_id'])): ?>
                         
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <!-- Avatar Circle -->
-                                <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center shadow-sm" style="width: 32px; height: 32px; font-weight: bold; font-size: 14px;">
-                                    <?php echo strtoupper(substr($_SESSION['user_name'], 0, 1)); ?>
-                                </div>
-                                <span class="fw-medium"><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
-                            </a>
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" 
+       href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="navbarDropdown">
-                                
-                                <!-- Admin Link -->
-                                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-                                    <li>
-                                        <a class="dropdown-item text-danger fw-bold" href="index.php?page=admin_dashboard">
-                                            <i class="bi bi-speedometer2 me-2"></i> Quản trị (Admin)
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                <?php endif; ?>
+        <?php 
+            $avatar = $_SESSION['user_avatar'] ?? null; 
+            // Ensure correct path
+            $avatarPath = (!empty($avatar)) ? htmlspecialchars($avatar) : null;
+        ?>
 
-                                <!-- Profile Links -->
-                                <li>
-                                    <a class="dropdown-item" href="index.php?page=profile">
-                                        <i class="bi bi-person-badge me-2"></i> Hồ sơ cá nhân
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="index.php?page=my_orders">
-                                        <i class="bi bi-box-seam me-2"></i> Đơn hàng của tôi
-                                    </a>
-                                </li>
+        <?php if ($avatarPath && file_exists($avatarPath)): ?>
+            <img src="<?php echo $avatarPath; ?>" 
+                 alt="Avatar" 
+                 class="rounded-circle shadow-sm"
+                 style="width: 32px; height: 32px; object-fit: cover;">
+        <?php else: ?>
+            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center shadow-sm" 
+                 style="width: 32px; height: 32px; font-weight: bold; font-size: 14px;">
+                <?php echo strtoupper(substr($_SESSION['user_name'], 0, 1)); ?>
+            </div>
+        <?php endif; ?>
 
-                                <li><hr class="dropdown-divider"></li>
+        <span class="fw-medium"><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
 
-                                <!-- Logout -->
-                                <li>
-                                    <a class="dropdown-item text-danger" href="index.php?page=logout">
-                                        <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
+    </a>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="navbarDropdown">
+        
+        <?php if ($_SESSION['user_role'] === 'admin'): ?>
+            <li>
+                <a class="dropdown-item text-danger fw-bold" href="index.php?page=admin_dashboard">
+                    <i class="bi bi-speedometer2 me-2"></i> Quản trị (Admin)
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+        <?php endif; ?>
+
+        <li>
+            <a class="dropdown-item" href="index.php?page=profile">
+                <i class="bi bi-person-badge me-2"></i> Hồ sơ cá nhân
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" href="index.php?page=my_orders">
+                <i class="bi bi-box-seam me-2"></i> Đơn hàng của tôi
+            </a>
+        </li>
+
+        <li><hr class="dropdown-divider"></li>
+
+        <li>
+            <a class="dropdown-item text-danger" href="index.php?page=logout">
+                <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+            </a>
+        </li>
+    </ul>
+</li>
 
                     <?php else: ?>
                         
-                        <!-- GUEST -->
                         <li class="nav-item">
                             <a class="btn btn-primary text-white" href="index.php?page=login">
                                 <i class="bi bi-person"></i> Đăng nhập

@@ -1,36 +1,45 @@
 <?php
 // controllers/BaseController.php
 
-/**
- * Lớp cơ sở (BaseController) cho tất cả các Controller khác.
- * Cung cấp các phương thức chung như kết nối DB, tải View và tính toán dữ liệu chung (Giỏ hàng).
- */
 class BaseController {
     
-    /**
-     * @var PDO|null $db Biến kết nối cơ sở dữ liệu PDO.
-     */
     protected $db;
-
-    /**
-     * @var string Đường dẫn gốc của View.
-     */
     protected $viewRoot = __DIR__ . '/../views/'; 
 
-    /**
-     * Khởi tạo BaseController và truyền kết nối DB.
-     * @param PDO|null $db_connection Kết nối PDO.
-     */
     public function __construct($db_connection = null) {
         $this->db = $db_connection;
+        // Check for Remember Me cookie on every controller initialization
+        $this->checkAutoLogin();
     }
 
     /**
-     * Lấy cấu hình hệ thống (Settings) từ cơ sở dữ liệu hoặc mặc định.
-     * @return array
+     * Check if "remember_me" cookie exists and log user in automatically
      */
+    protected function checkAutoLogin() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        // Only check if user is NOT logged in and cookie exists
+        if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
+            $token = $_COOKIE['remember_me'];
+            
+            // We query directly here to ensure it runs before any specific model is loaded
+            if ($this->db) {
+                $stmt = $this->db->prepare("SELECT * FROM users WHERE remember_token = :token LIMIT 1");
+                $stmt->execute([':token' => $token]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($user && ($user['status'] ?? 'active') === 'active') {
+                    // Log user in
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_name'] = $user['name'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_role'] = $user['role'];
+                }
+            }
+        }
+    }
+
     protected function getSettings() {
-        // Trả về mặc định an toàn
         return [
             'company_name' => 'E-Commerce MVC',
             'logo_path' => 'logo.png',
@@ -38,62 +47,36 @@ class BaseController {
         ];
     }
     
-    /**
-     * Tải tệp View và bao gồm Header/Footer.
-     * Tự động tính toán số lượng giỏ hàng để hiển thị trên badge.
-     * * @param string $viewPath Đường dẫn tương đối đến tệp view (VD: 'product/list')
-     * @param array $data Dữ liệu cần truyền vào View
-     */
     protected function loadView($viewPath, $data = []) {
-        // 1. Lấy thông tin cấu hình chung
         $settings = $this->getSettings(); 
         $data['settings'] = $settings;
 
-        // 2. --- TÍNH TOÁN SỐ LƯỢNG GIỎ HÀNG (MỚI) ---
-        // Logic này chạy mỗi khi view được load để cập nhật số trên Header
         $cartCount = 0;
         if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
-            // Giả sử session cart lưu dạng: [product_id => quantity]
-            foreach ($_SESSION['cart'] as $qty) {
-                $cartCount += (int)$qty;
+            foreach ($_SESSION['cart'] as $val) {
+                // Handle mixed array/int session data gracefully
+                $qty = is_array($val) ? ($val['quantity'] ?? 1) : intval($val);
+                $cartCount += $qty;
             }
         }
-        // Truyền biến này vào $data để header.php có thể sử dụng
         $data['cartCount'] = $cartCount; 
-        // ----------------------------------------------------
 
-        // 3. Trích xuất mảng $data thành các biến riêng biệt ($settings, $cartCount, $products...)
         extract($data);
         
-        // 4. Tải Header (views/layouts/header.php)
         $headerPath = $this->viewRoot . 'layouts/header.php';
-        if (file_exists($headerPath)) {
-            require_once $headerPath;
-        } else {
-            die("Lỗi Nạp View: KHÔNG tìm thấy tệp header tại: " . htmlspecialchars($headerPath));
-        }
+        if (file_exists($headerPath)) require_once $headerPath;
         
-        // 5. Tải View chính (views/product/list.php, v.v.)
         $viewFullPath = $this->viewRoot . $viewPath . '.php';
         if (file_exists($viewFullPath)) {
             require_once $viewFullPath;
         } else {
-            die("Lỗi Nạp View: KHÔNG tìm thấy tệp view tại: " . htmlspecialchars($viewFullPath));
+            die("Lỗi Nạp View: " . htmlspecialchars($viewFullPath));
         }
 
-        // 6. Tải Footer (views/layouts/footer.php)
         $footerPath = $this->viewRoot . 'layouts/footer.php';
-        if (file_exists($footerPath)) {
-            require_once $footerPath;
-        } else {
-            die("Lỗi Nạp View: KHÔNG tìm thấy tệp footer tại: " . htmlspecialchars($footerPath));
-        }
+        if (file_exists($footerPath)) require_once $footerPath;
     }
 
-    /**
-     * Hàm tiện ích để chuyển hướng trang (Redirect)
-     * @param string $url URL đích (VD: 'index.php?page=home')
-     */
     protected function redirect($url) {
         header("Location: " . $url);
         exit();

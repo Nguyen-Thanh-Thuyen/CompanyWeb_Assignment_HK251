@@ -33,7 +33,7 @@ $settings = $settings ?? ['company_name' => 'E-Commerce MVC'];
                 <h5 class="text-uppercase mb-4 font-weight-bold text-warning">Liên hệ</h5>
                 <p><i class="bi bi-house-door-fill me-3"></i> TPHCM, Việt Nam</p>
                 <p><i class="bi bi-envelope-fill me-3"></i> info@ecommerce.com</p>
-                <p><i class="bi bi-telephone-fill me-3"></i> +84 901 234 567</p>
+                <p><i class="bi bi-telephone-fill me-3"></i> +84 865 167 913</p>
             </div>
         </div>
 

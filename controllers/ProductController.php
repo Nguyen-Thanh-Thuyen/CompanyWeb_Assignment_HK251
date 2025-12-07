@@ -3,11 +3,13 @@
 
 require_once ROOT_PATH . '/models/ProductModel.php';
 require_once ROOT_PATH . '/models/CategoryModel.php';
+require_once ROOT_PATH . '/models/CommentModel.php'; // <--- Required for comments
 require_once 'BaseController.php'; 
 
 class ProductController extends BaseController {
     private $productModel;
     private $categoryModel;
+    private $commentModel; // <--- Property for comments
 
     public function __construct() {
         $database = new Database();
@@ -16,6 +18,7 @@ class ProductController extends BaseController {
 
         $this->productModel = new ProductModel($this->db);
         $this->categoryModel = new CategoryModel($this->db);
+        $this->commentModel = new CommentModel($this->db); // <--- Initialize Model
     }
 
     // =========================================================================
@@ -76,19 +79,69 @@ class ProductController extends BaseController {
             return;
         }
 
+        // Fetch Related Products
         $relatedProducts = $this->productModel->getRelated(
             $product['id'], 
             $product['category_id'], 
             4
         );
 
+        // --- FETCH COMMENTS & RATINGS ---
+        $comments = $this->commentModel->getByProduct($productId);
+        $avgRating = $this->commentModel->getAverageRating($productId);
+        $totalComments = count($comments);
+
         $data = [
             'product' => $product,
             'relatedProducts' => $relatedProducts,
+            'comments' => $comments,
+            'avgRating' => $avgRating,
+            'totalComments' => $totalComments,
             'page_title' => $product['name']
         ];
 
         $this->loadView('product/detail', $data);
+    }
+
+    /**
+     * ACTION: Add Comment (This was the missing method)
+     * Route: index.php?page=add_comment
+     */
+    public function addComment() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('index.php?page=home');
+        }
+
+        // 1. Check Login
+        if (!isset($_SESSION['user_id'])) {
+            $_SESSION['error'] = "Vui lòng đăng nhập để bình luận.";
+            // Redirect back to product page (need product_id)
+            $productId = intval($_POST['product_id'] ?? 0);
+            if ($productId > 0) {
+                $this->redirect("index.php?page=product_detail&id=$productId");
+            } else {
+                $this->redirect('index.php?page=product_list');
+            }
+            return;
+        }
+
+        // 2. Get Data
+        $productId = intval($_POST['product_id']);
+        $userId = $_SESSION['user_id'];
+        $content = htmlspecialchars(trim($_POST['content']));
+        $rating = intval($_POST['rating']);
+
+        if ($content === '' || $rating < 1 || $rating > 5) {
+            echo "<script>alert('Vui lòng nhập nội dung và chọn đánh giá.'); window.history.back();</script>";
+            return;
+        }
+
+        // 3. Save
+        if ($this->commentModel->create($productId, $userId, $content, $rating)) {
+            $this->redirect("index.php?page=product_detail&id=$productId");
+        } else {
+            echo "<script>alert('Lỗi khi gửi bình luận.'); window.history.back();</script>";
+        }
     }
 
     // =========================================================================
@@ -258,7 +311,6 @@ class ProductController extends BaseController {
      * ADMIN: Delete Product (AJAX)
      */
     public function delete() {
-        // Since this is often an AJAX call, we return JSON
         if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
              echo json_encode(['success' => false, 'message' => 'Unauthorized']); 
              return;
@@ -275,13 +327,9 @@ class ProductController extends BaseController {
             return;
         }
 
-        // Optional: Get product to delete image file first
-        $product = $this->productModel->getById($productId);
-        
         $result = $this->productModel->delete($productId);
 
         if ($result) {
-            // Delete image file logic here if desired
             echo json_encode(['success' => true, 'message' => 'Đã xóa sản phẩm']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Lỗi xóa sản phẩm']);
@@ -292,39 +340,25 @@ class ProductController extends BaseController {
     // HELPERS
     // =========================================================================
 
-    /**
-     * Security Check for Admin
-     */
     private function requireAdmin() {
         if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
             $this->redirect('index.php?page=home');
         }
     }
 
-    /**
-     * Helper to load Tabler Admin Views
-     */
     protected function loadAdminView($view, $data = []) {
         extract($data);
-        // This file is the "Master Layout" for admin
         require_once ROOT_PATH . '/views/layouts/admin_layout.php';
     }
 
-    /**
-     * Validation Logic
-     */
     private function validateProductData($data) {
         $errors = [];
         if (empty($data['name'])) $errors['name'] = "Tên sản phẩm không được để trống";
         if (empty($data['price']) || $data['price'] <= 0) $errors['price'] = "Giá sản phẩm phải lớn hơn 0";
         if (!isset($data['stock']) || $data['stock'] < 0) $errors['stock'] = "Số lượng tồn kho không hợp lệ";
-        // category_id can be null/0 if "Uncategorized" is allowed
         return $errors;
     }
 
-    /**
-     * Image Upload Logic
-     */
     private function handleImageUpload($file) {
         $uploadDir = 'public/uploads/product_images/';
         
@@ -335,7 +369,6 @@ class ProductController extends BaseController {
         $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
         if (!in_array($file['type'], $allowedTypes)) return false;
         
-        // 5MB Limit
         if ($file['size'] > 5 * 1024 * 1024) return false;
 
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);

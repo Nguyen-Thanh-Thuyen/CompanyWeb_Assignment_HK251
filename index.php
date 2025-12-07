@@ -11,11 +11,16 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 3. Get Page Parameter
-$page = isset($_GET['page']) ? $_GET['page'] : 'home';
+$page = $_GET['page'] ?? 'home';
 
-// 4. Database Connection
-// (Kept for legacy controllers that might still need it passed manually)
-$db_connection = isset($pdo) ? $pdo : null;
+// 4. Database Connection (for legacy controllers)
+$db_connection = $pdo ?? null;
+
+// A helper to load controller classes safely
+function loadController($file, $class, $param = null) {
+    require_once "controllers/$file.php";
+    return $param ? new $class($param) : new $class();
+}
 
 // ====================================================================
 // ROUTING SWITCH
@@ -23,286 +28,208 @@ $db_connection = isset($pdo) ? $pdo : null;
 
 switch ($page) {
 
-    // --- HOME ---
+    // HOME -----------------------------------------------------------
     case 'home':
-        require_once 'controllers/HomeController.php';
-        $controller = new HomeController();
+        $controller = loadController('HomeController', 'HomeController');
         $controller->index();
         break;
 
-        // ====================================================
-        // 1. AUTHENTICATION (Login, Register, Logout, Profile)
-        // ====================================================
+    // AUTH -----------------------------------------------------------
     case 'login':
-        require_once 'controllers/AuthController.php';
-        $controller = new AuthController();
-        $controller->login();
-        break;
-
     case 'login_submit':
-        require_once 'controllers/AuthController.php';
-        $controller = new AuthController();
-        $controller->handleLogin();
-        break;
-
     case 'register':
-        require_once 'controllers/AuthController.php';
-        $controller = new AuthController();
-        $controller->register();
-        break;
-
     case 'register_submit':
-        require_once 'controllers/AuthController.php';
-        $controller = new AuthController();
-        $controller->handleRegister();
-        break;
-
     case 'logout':
-        require_once 'controllers/AuthController.php';
-        $controller = new AuthController();
-        $controller->logout();
-        break;
-
     case 'profile':
-        require_once 'controllers/AuthController.php';
-        $controller = new AuthController();
-        $controller->profile();
+    case 'update_profile':   // <--- NEW
+    case 'change_password':  // <--- NEW
+    case 'upload_avatar':    // <--- NEW
+        $controller = loadController('AuthController', 'AuthController');
+
+        match ($page) {
+            'login'           => $controller->login(),
+            'login_submit'    => $controller->handleLogin(),
+            'register'        => $controller->register(),
+            'register_submit' => $controller->handleRegister(),
+            'logout'          => $controller->logout(),
+            'profile'         => $controller->profile(),
+            'update_profile'  => $controller->updateProfile(),  // <--- NEW
+            'change_password' => $controller->changePassword(), // <--- NEW
+            'upload_avatar'   => $controller->uploadAvatar()    // <--- NEW
+        };
         break;
 
-        // ====================================================
-        // 2. PRODUCTS (List & Detail)
-        // ====================================================
+    // PRODUCTS -------------------------------------------------------
     case 'products':
     case 'product_list':
-        require_once 'controllers/ProductController.php';
-        $controller = new ProductController(); // No params needed
-        $controller->index();
-        break;
-
     case 'product_detail':
-        require_once 'controllers/ProductController.php';
-        $controller = new ProductController(); // No params needed
-        $controller->detail();
+    case 'add_comment':
+        $controller = loadController('ProductController', 'ProductController');
+        
+        match ($page) {
+            'products', 'product_list' => $controller->index(),
+            'product_detail'           => $controller->detail(),
+            'add_comment'              => $controller->addComment()
+        };
         break;
 
-        // ====================================================
-        // 3. CART & CHECKOUT FLOW
-        // ====================================================
+    // CART -----------------------------------------------------------
     case 'cart':
     case 'add_to_cart':
     case 'update_cart':
     case 'remove_from_cart':
     case 'checkout':
-        require_once 'controllers/CartController.php';
-        $controller = new CartController(); // No params needed
+        $controller = loadController('CartController', 'CartController');
 
-        switch ($page) {
-            case 'cart':             $controller->index();
-                break;
-            case 'add_to_cart':      $controller->addToCart();
-                break;
-            case 'update_cart':      $controller->updateCart();
-                break;
-            case 'remove_from_cart': $controller->removeFromCart();
-                break;
-            case 'checkout':         $controller->checkout();
-                break;
-        }
+        match ($page) {
+            'cart'            => $controller->index(),
+            'add_to_cart'     => $controller->addToCart(),
+            'update_cart'     => $controller->updateCart(),
+            'remove_from_cart'=> $controller->removeFromCart(),
+            'checkout'        => $controller->checkout()
+        };
         break;
 
-        // ====================================================
-        // 4. PAYMENT PROCESS
-        // ====================================================
+    // PAYMENT --------------------------------------------------------
     case 'payment':
     case 'process_payment':
-        require_once 'controllers/PaymentController.php';
-        $controller = new PaymentController(); // No params needed
-
-        if ($page === 'payment') {
-            $controller->index();
-        } else {
-            $controller->process();
-        }
+        $controller = loadController('PaymentController', 'PaymentController');
+        ($page === 'payment') ? $controller->index() : $controller->process();
         break;
 
-        // ====================================================
-        // 5. ORDERS (User & Admin)
-        // ====================================================
+    // ORDERS (User & Admin) -----------------------------------------
     case 'my_orders':
     case 'order_detail':
     case 'admin_order_list':
     case 'admin_order_detail':
     case 'admin_order_update_status':
-        require_once 'controllers/OrderController.php';
-        $controller = new OrderController(); // No params needed
+        $controller = loadController('OrderController', 'OrderController');
 
-        switch ($page) {
-            // User Actions
-            case 'my_orders':               $controller->myOrders();
-                break;
-            case 'order_detail':            $controller->detail();
-                break;
-                // Admin Actions
-            case 'admin_order_list':        $controller->adminList();
-                break;
-            case 'admin_order_detail':      $controller->adminDetail();
-                break;
-            case 'admin_order_update_status': $controller->updateStatus();
-                break;
-        }
+        match ($page) {
+            'my_orders'                 => $controller->myOrders(),
+            'order_detail'              => $controller->detail(),
+            'admin_order_list'          => $controller->adminList(),
+            'admin_order_detail'        => $controller->adminDetail(),
+            'admin_order_update_status' => $controller->updateStatus()
+        };
         break;
 
-        // ====================================================
-        // 6. ADMIN: PRODUCT MANAGEMENT
-        // ====================================================
+    // ADMIN PRODUCT --------------------------------------------------
     case 'admin_product_list':
     case 'admin_product_create':
     case 'admin_product_edit':
     case 'admin_product_delete':
-        require_once 'controllers/ProductController.php';
-        $controller = new ProductController(); // No params needed
+        $controller = loadController('ProductController', 'ProductController');
 
-        switch ($page) {
-            case 'admin_product_list':   $controller->adminList();
-                break;
-            case 'admin_product_create': $controller->create();
-                break;
-            case 'admin_product_edit':   $controller->edit();
-                break;
-            case 'admin_product_delete': $controller->delete();
-                break;
-        }
+        match ($page) {
+            'admin_product_list'   => $controller->adminList(),
+            'admin_product_create' => $controller->create(),
+            'admin_product_edit'   => $controller->edit(),
+            'admin_product_delete' => $controller->delete()
+        };
         break;
 
-        // ====================================================
-        // 7. CONTENT PAGES (News, About, Contact, FAQ)
-        // ====================================================
-        // Note: Passing $db_connection here for legacy controllers
-
-        // --- NEWS ---
+    // NEWS -----------------------------------------------------------
     case 'news_list':
     case 'news_detail':
-        require_once 'controllers/NewsController.php';
-        $controller = new NewsController($db_connection);
-        if ($page === 'news_list') {
-            $controller->index();
-        } else {
-            $controller->detail();
-        }
+        $controller = loadController('NewsController', 'NewsController', $db_connection);
+        ($page === 'news_list') ? $controller->index() : $controller->detail();
         break;
 
-        // --- ADMIN NEWS ---
     case 'admin_news_list':
     case 'admin_news_create':
     case 'admin_news_edit':
     case 'admin_news_delete':
-        require_once 'controllers/AdminNewsController.php';
-        $controller = new AdminNewsController($db_connection);
-        if ($page === 'admin_news_list') {
-            $controller->index();
-        } elseif ($page === 'admin_news_create') {
-            $controller->create();
-        } elseif ($page === 'admin_news_edit') {
-            $controller->edit();
-        } else {
-            $controller->delete();
-        }
+        $controller = loadController('AdminNewsController', 'AdminNewsController', $db_connection);
+
+        match ($page) {
+            'admin_news_list'   => $controller->index(),
+            'admin_news_create' => $controller->create(),
+            'admin_news_edit'   => $controller->edit(),
+            'admin_news_delete' => $controller->delete()
+        };
         break;
 
-        // --- ABOUT & FAQ ---
+    // STATIC CONTENT -------------------------------------------------
     case 'about':
-        require_once 'controllers/AboutController.php';
-        $controller = new AboutController($db_connection);
+        $controller = loadController('AboutController', 'AboutController', $db_connection);
         $controller->index();
         break;
 
     case 'faq':
-        require_once 'controllers/FaqController.php';
-        $controller = new FaqController($db_connection);
+        $controller = loadController('FaqController', 'FaqController', $db_connection);
         $controller->index();
         break;
 
-        // --- CONTACT ---
+    // CONTACT --------------------------------------------------------
     case 'contact':
     case 'contact_submit':
-        require_once 'controllers/ContactController.php';
-        $controller = new ContactController($db_connection);
-        if ($page === 'contact') {
-            $controller->index();
-        } else {
-            $controller->send();
-        }
+        $controller = loadController('ContactController', 'ContactController', $db_connection);
+        ($page === 'contact') ? $controller->index() : $controller->send();
         break;
 
-        // ====================================================
-        // 8. OTHER ADMIN MODULES
-        // ====================================================
-
-        // --- ADMIN SETTINGS ---
+    // ADMIN SETTINGS -------------------------------------------------
     case 'admin_settings':
-        require_once 'controllers/AdminSettingController.php';
-        $controller = new AdminSettingController($db_connection);
-        $controller->index();
+        loadController('AdminSettingController', 'AdminSettingController', $db_connection)->index();
         break;
 
     case 'admin_page_settings':
-        require_once 'controllers/AdminPageSettingController.php';
-        $controller = new AdminPageSettingController($db_connection);
-        $controller->index();
+        loadController('AdminPageSettingController', 'AdminPageSettingController', $db_connection)->index();
         break;
+
     case 'admin_dashboard':
-        require_once 'controllers/AdminDashboardController.php';
-        $controller = new AdminDashboardController();
-        $controller->index();
+        loadController('AdminDashboardController', 'AdminDashboardController')->index();
         break;
-        // --- ADMIN CONTACTS ---
+
+    // ADMIN CONTACTS -------------------------------------------------
     case 'admin_contacts':
     case 'admin_contact_status':
     case 'admin_contact_delete':
-        require_once 'controllers/AdminContactController.php';
-        $controller = new AdminContactController($db_connection);
-        if ($page === 'admin_contacts') {
-            $controller->index();
-        } elseif ($page === 'admin_contact_status') {
-            $controller->update_status();
-        } else {
-            $controller->delete();
-        }
+        $controller = loadController('AdminContactController', 'AdminContactController', $db_connection);
+
+        match ($page) {
+            'admin_contacts'       => $controller->index(),
+            'admin_contact_status' => $controller->update_status(),
+            'admin_contact_delete' => $controller->delete()
+        };
         break;
 
-        // --- ADMIN FAQ ---
+    // ADMIN FAQ ------------------------------------------------------
     case 'admin_faq_list':
     case 'admin_faq_create':
     case 'admin_faq_edit':
     case 'admin_faq_delete':
-        require_once 'controllers/AdminFaqController.php';
-        $controller = new AdminFaqController($db_connection);
-        if ($page === 'admin_faq_list') {
-            $controller->index();
-        } elseif ($page === 'admin_faq_create') {
-            $controller->create();
-        } elseif ($page === 'admin_faq_edit') {
-            $controller->edit();
-        } else {
-            $controller->delete();
-        }
+        $controller = loadController('AdminFaqController', 'AdminFaqController', $db_connection);
+
+        match ($page) {
+            'admin_faq_list'   => $controller->index(),
+            'admin_faq_create' => $controller->create(),
+            'admin_faq_edit'   => $controller->edit(),
+            'admin_faq_delete' => $controller->delete()
+        };
         break;
 
-        // --- ADMIN COMMENTS ---
+    // ADMIN COMMENTS -------------------------------------------------
     case 'admin_comment_list':
     case 'admin_comment_delete':
-        require_once 'controllers/AdminCommentController.php';
-        $controller = new AdminCommentController($db_connection);
-        if ($page === 'admin_comment_list') {
-            $controller->index();
-        } else {
-            $controller->delete();
-        }
+        $controller = loadController('AdminCommentController', 'AdminCommentController', $db_connection);
+        ($page === 'admin_comment_list') ? $controller->index() : $controller->delete();
         break;
 
-        // ====================================================
-        // 404 NOT FOUND
-        // ====================================================
+    // ADMIN USER -----------------------------------------------------
+    case 'admin_user_list':
+    case 'admin_user_status':
+    case 'admin_user_reset_password':
+        $controller = loadController('AdminUserController', 'AdminUserController');
+
+        match ($page) {
+            'admin_user_list'           => $controller->index(),
+            'admin_user_status'         => $controller->updateStatus(),
+            'admin_user_reset_password' => $controller->resetPassword()
+        };
+        break;
+
+    // 404 -------------------------------------------------------------
     default:
         http_response_code(404);
         require_once 'views/layouts/header.php';

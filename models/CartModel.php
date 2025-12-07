@@ -4,6 +4,8 @@
  * Model xử lý giỏ hàng (cho user đã login)
  */
 
+require_once __DIR__ . '/../config/database.php';
+
 class CartModel {
     private $conn;
     private $table = 'carts';
@@ -36,14 +38,11 @@ class CartModel {
             
             return $cart;
         } catch (PDOException $e) {
-            error_log("CartModel::getOrCreateActiveCart() Error: " . $e->getMessage());
+            // Return null on error (e.g. table doesn't exist)
             return null;
         }
     }
 
-    /**
-     * Lấy cart theo ID
-     */
     public function getById($cartId) {
         try {
             $sql = "SELECT * FROM {$this->table} WHERE id = ?";
@@ -51,14 +50,10 @@ class CartModel {
             $stmt->execute([$cartId]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("CartModel::getById() Error: " . $e->getMessage());
             return null;
         }
     }
 
-    /**
-     * Lấy tất cả items trong cart (với thông tin product)
-     */
     public function getCartItems($cartId) {
         try {
             $sql = "SELECT ci.*, p.name, p.image, p.stock 
@@ -71,104 +66,79 @@ class CartModel {
             $stmt->execute([$cartId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("CartModel::getCartItems() Error: " . $e->getMessage());
             return [];
         }
     }
 
-    /**
-     * Kiểm tra product đã có trong cart chưa
-     */
-    private function getCartItem($cartId, $productId) {
-        try {
-            $sql = "SELECT * FROM {$this->itemsTable} WHERE cart_id = ? AND product_id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$cartId, $productId]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("CartModel::getCartItem() Error: " . $e->getMessage());
-            return null;
-        }
-    }
+    // =========================================================================
+    // CORE CART OPERATIONS (Add, Update, Remove)
+    // =========================================================================
 
     /**
-     * Thêm sản phẩm vào cart
+     * Thêm sản phẩm vào cart (Add Button)
      */
     public function addItem($cartId, $productId, $quantity, $price) {
         try {
-            $existing = $this->getCartItem($cartId, $productId);
+            // Check existence
+            $sql = "SELECT id, quantity FROM {$this->itemsTable} WHERE cart_id = ? AND product_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$cartId, $productId]);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($existing) {
+            if ($item) {
                 // Update quantity
-                $sql = "UPDATE {$this->itemsTable} 
-                        SET quantity = quantity + ? 
-                        WHERE cart_id = ? AND product_id = ?";
+                $newQty = $item['quantity'] + $quantity;
+                $sql = "UPDATE {$this->itemsTable} SET quantity = ? WHERE id = ?";
                 $stmt = $this->conn->prepare($sql);
-                return $stmt->execute([$quantity, $cartId, $productId]);
+                return $stmt->execute([$newQty, $item['id']]);
             } else {
-                // Insert mới
+                // Insert new
                 $sql = "INSERT INTO {$this->itemsTable} (cart_id, product_id, quantity, price) 
                         VALUES (?, ?, ?, ?)";
                 $stmt = $this->conn->prepare($sql);
                 return $stmt->execute([$cartId, $productId, $quantity, $price]);
             }
         } catch (PDOException $e) {
-            error_log("CartModel::addItem() Error: " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Update số lượng của 1 cart item
+     * Cập nhật số lượng (Input change / Plus / Minus)
+     * Using Product ID (New Method)
      */
-    public function updateItemQuantity($cartItemId, $quantity) {
+    public function updateQuantity($cartId, $productId, $quantity) {
         try {
             if ($quantity <= 0) {
-                return $this->removeItem($cartItemId);
+                return $this->removeProduct($cartId, $productId);
             }
             
-            $sql = "UPDATE {$this->itemsTable} SET quantity = ? WHERE id = ?";
+            $sql = "UPDATE {$this->itemsTable} SET quantity = ? WHERE cart_id = ? AND product_id = ?";
             $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([$quantity, $cartItemId]);
+            return $stmt->execute([$quantity, $cartId, $productId]);
         } catch (PDOException $e) {
-            error_log("CartModel::updateItemQuantity() Error: " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Xóa 1 item khỏi cart
+     * Xóa sản phẩm khỏi cart (Delete Button)
+     * Using Product ID (New Method)
      */
-    public function removeItem($cartItemId) {
+    public function removeProduct($cartId, $productId) {
         try {
-            $sql = "DELETE FROM {$this->itemsTable} WHERE id = ?";
+            $sql = "DELETE FROM {$this->itemsTable} WHERE cart_id = ? AND product_id = ?";
             $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([$cartItemId]);
+            return $stmt->execute([$cartId, $productId]);
         } catch (PDOException $e) {
-            error_log("CartModel::removeItem() Error: " . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Tính tổng giá trị cart
-     */
-    public function getCartTotal($cartId) {
-        try {
-            $sql = "SELECT SUM(quantity * price) as total FROM {$this->itemsTable} WHERE cart_id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$cartId]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result['total'] ?? 0;
-        } catch (PDOException $e) {
-            error_log("CartModel::getCartTotal() Error: " . $e->getMessage());
-            return 0;
-        }
-    }
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
 
-    /**
-     * Đếm số lượng items trong cart
-     */
     public function countItems($cartId) {
         try {
             $sql = "SELECT COUNT(*) FROM {$this->itemsTable} WHERE cart_id = ?";
@@ -176,60 +146,26 @@ class CartModel {
             $stmt->execute([$cartId]);
             return $stmt->fetchColumn();
         } catch (PDOException $e) {
-            error_log("CartModel::countItems() Error: " . $e->getMessage());
             return 0;
         }
     }
 
-    /**
-     * Clear tất cả items trong cart
-     */
     public function clearCart($cartId) {
         try {
             $sql = "DELETE FROM {$this->itemsTable} WHERE cart_id = ?";
             $stmt = $this->conn->prepare($sql);
             return $stmt->execute([$cartId]);
         } catch (PDOException $e) {
-            error_log("CartModel::clearCart() Error: " . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Đánh dấu cart đã checkout (chuyển status = 'ordered')
-     */
     public function markAsOrdered($cartId) {
         try {
             $sql = "UPDATE {$this->table} SET status = 'ordered' WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
             return $stmt->execute([$cartId]);
         } catch (PDOException $e) {
-            error_log("CartModel::markAsOrdered() Error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Merge session cart vào database cart (khi guest login)
-     * TODO: Sẽ implement sau khi có Auth
-     */
-    public function mergeSessionCart($userId, $sessionCartItems) {
-        try {
-            $cart = $this->getOrCreateActiveCart($userId);
-            if (!$cart) return false;
-            
-            foreach ($sessionCartItems as $item) {
-                $this->addItem(
-                    $cart['id'],
-                    $item['product_id'],
-                    $item['quantity'],
-                    $item['price']
-                );
-            }
-            
-            return true;
-        } catch (PDOException $e) {
-            error_log("CartModel::mergeSessionCart() Error: " . $e->getMessage());
             return false;
         }
     }

@@ -1,51 +1,86 @@
 <?php
+// models/CommentModel.php
+require_once __DIR__ . '/../config/database.php';
+
 class CommentModel {
-    private $pdo;
+    private $conn;
 
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
+    public function __construct($db) {
+        $this->conn = $db;
     }
 
-    /**
-     * Thêm một bình luận mới vào bài viết
-     * @param int $articleId ID bài viết
-     * @param string $author Tên người bình luận
-     * @param string $content Nội dung bình luận
-     * @return bool True nếu thành công
-     */
-    public function addComment($articleId, $author, $content) {
-        try {
-            $stmt = $this->pdo->prepare("
-                INSERT INTO comments (article_id, author, content, created_at, status) 
-                VALUES (:aid, :author, :content, NOW(), 'pending')
-            ");
-            $stmt->bindParam(':aid', $articleId, PDO::PARAM_INT);
-            $stmt->bindParam(':author', $author);
-            $stmt->bindParam(':content', $content);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            // Xử lý lỗi
-            return false;
-        }
+    // --- CLIENT METHODS ---
+    public function getByProduct($productId) {
+        $query = "SELECT c.*, u.name as user_name 
+                  FROM comments c 
+                  LEFT JOIN users u ON c.user_id = u.id 
+                  WHERE c.product_id = :pid 
+                  ORDER BY c.created_at DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pid', $productId);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Lấy danh sách bình luận (dành cho Admin)
-     * @return array Danh sách bình luận kèm thông tin bài viết
-     */
-    public function getAllCommentsForAdmin() {
-        try {
-            $sql = "SELECT c.*, n.title as article_title FROM comments c 
-                    JOIN news n ON c.article_id = n.id 
-                    ORDER BY c.created_at DESC";
-            $stmt = $this->pdo->query($sql);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            // Xử lý lỗi
-            return [];
-        }
+    public function create($productId, $userId, $content, $rating) {
+        $query = "INSERT INTO comments (product_id, user_id, content, rating) 
+                  VALUES (:pid, :uid, :content, :rating)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pid', $productId);
+        $stmt->bindParam(':uid', $userId);
+        $stmt->bindParam(':content', $content);
+        $stmt->bindParam(':rating', $rating);
+        return $stmt->execute();
     }
-    
-    // Cần bổ sung hàm: deleteComment($id), updateCommentStatus($id, $status)
+
+    public function countByProduct($productId) {
+        $query = "SELECT COUNT(*) as total FROM comments WHERE product_id = :pid";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pid', $productId);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
+    }
+
+    public function getAverageRating($productId) {
+        $query = "SELECT AVG(rating) as avg_rating FROM comments WHERE product_id = :pid";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pid', $productId);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return round($row['avg_rating'] ?? 0, 1);
+    }
+
+    // --- ADMIN METHODS (NEW) ---
+
+    // Get all comments for Admin Table (with Product and User info)
+    public function getAll($limit, $offset) {
+        $query = "SELECT c.*, p.name as product_name, u.name as user_name 
+                  FROM comments c
+                  LEFT JOIN products p ON c.product_id = p.id
+                  LEFT JOIN users u ON c.user_id = u.id
+                  ORDER BY c.created_at DESC
+                  LIMIT :limit OFFSET :offset";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function countAll() {
+        $query = "SELECT COUNT(*) as total FROM comments";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
+    }
+
+    public function delete($id) {
+        $query = "DELETE FROM comments WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
 }
 ?>

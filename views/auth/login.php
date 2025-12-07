@@ -1,7 +1,7 @@
 <!-- views/auth/login.php -->
 <style>
     .login-container {
-        min-height: 80vh; /* Fill screen mostly */
+        min-height: 80vh;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -26,6 +26,10 @@
     <div class="login-card">
         <h2>Đăng Nhập</h2>
         
+        <?php if (isset($success)): ?>
+            <div class="alert alert-success"><?php echo $success; ?></div>
+        <?php endif; ?>
+
         <?php if (isset($error)): ?>
             <div class="alert alert-danger" style="background: #ffebee; color: #c62828; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
                 <?php echo $error; ?>
@@ -35,12 +39,20 @@
         <form action="index.php?page=login_submit" method="POST">
             <div style="margin-bottom: 15px; text-align: left;">
                 <label class="form-label" style="font-weight: 500;">Email:</label>
-                <input type="email" name="email" class="form-control" required placeholder="admin@gmail.com">
+                <input type="email" name="email" class="form-control" required placeholder="email@example.com">
             </div>
 
-            <div style="margin-bottom: 25px; text-align: left;">
+            <div style="margin-bottom: 15px; text-align: left;">
                 <label class="form-label" style="font-weight: 500;">Mật khẩu:</label>
                 <input type="password" name="password" class="form-control" required placeholder="******">
+            </div>
+
+            <!-- Remember Me Checkbox -->
+            <div class="form-check text-start mb-3">
+                <input class="form-check-input" type="checkbox" name="remember" id="rememberMe">
+                <label class="form-check-label" for="rememberMe">
+                    Ghi nhớ đăng nhập
+                </label>
             </div>
 
             <button type="submit" class="btn btn-primary w-100" style="width: 100%; padding: 12px;">
@@ -48,8 +60,8 @@
             </button>
         </form>
 
-<div style="margin-top: 20px; font-size: 0.9rem;">
-    Chưa có tài khoản? <a href="index.php?page=register" style="color: var(--accent-color);">Đăng ký ngay</a>
-</div>
+        <div style="margin-top: 20px; font-size: 0.9rem;">
+            Chưa có tài khoản? <a href="index.php?page=register" style="color: var(--accent-color);">Đăng ký ngay</a>
+        </div>
     </div>
 </div>
