@@ -230,14 +230,14 @@ class AuthController extends BaseController {
 
         $hash = password_hash($password, PASSWORD_BCRYPT);
 
-        if ($this->userModel->create($name, $email, $hash)) {
-            $this->loadView('auth/login', ['success' => 'Đăng ký thành công! Vui lòng đăng nhập.']);
-        } else {
-            $this->loadView('auth/register', [
-                'error' => 'Lỗi hệ thống. Vui lòng thử lại sau.',
-                'old' => ['name' => $name, 'email' => $email]
-            ]);
-        }
+if ($this->userModel->create($name, $email, $password)) {
+    $this->loadView('auth/login', ['success' => 'Đăng ký thành công! Vui lòng đăng nhập.']);
+} else {
+    $this->loadView('auth/register', [
+        'error' => 'Lỗi hệ thống. Vui lòng thử lại sau.',
+        'old' => ['name' => $name, 'email' => $email]
+    ]);
+}
     }
 
     /* ========================
