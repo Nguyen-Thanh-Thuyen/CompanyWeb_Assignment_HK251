@@ -59,20 +59,29 @@ class CartController extends BaseController {
     }
 
     public function checkout() {
-        if (empty($_SESSION['cart'])) {
-            $this->redirect('index.php?page=product_list');
-        }
 
+        // Nếu chưa login → bắt đăng nhập
         if (!isset($_SESSION['user_id'])) {
             $this->redirect('index.php?page=login');
         }
 
+        // LẤY CART TỪ DATABASE
+        $cart = $this->cartModel->getOrCreateActiveCart($_SESSION['user_id']);
+        $cartItems = $this->cartModel->getCartItems($cart['id']);
+
+        // Cart DB RỖNG → redirect về trang sản phẩm
+        if (empty($cartItems)) {
+            $this->redirect('index.php?page=product_list');
+        }
+
+        // Lưu ghi chú
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['checkout_note'] = htmlspecialchars($_POST['note'] ?? '');
         }
 
         $this->redirect('index.php?page=payment');
-    }
+}
+
 
     public function addToCart() {
         if (ob_get_length()) ob_clean();

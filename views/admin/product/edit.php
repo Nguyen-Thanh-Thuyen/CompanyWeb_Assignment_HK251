@@ -28,8 +28,7 @@
 </head>
 <body>
     <div class="page">
-        <!-- Sidebar -->
-        <?php include __DIR__ . '/../../includes/admin_sidebar.php'; ?>
+
 
         <div class="page-wrapper">
             <!-- Page Header -->
@@ -150,7 +149,7 @@
                                         <div class="mb-3">
                                             <label class="form-label">Trạng thái</label>
                                             <div>
-                                                <?php $currentStatus = $_SESSION['old']['status'] ?? $product['status']; ?>
+                                                <?php $currentStatus = $_SESSION['old']['is_active'] ?? $product['is_active']; ?>
                                                 <label class="form-check form-check-inline">
                                                     <input class="form-check-input" 
                                                            type="radio" 

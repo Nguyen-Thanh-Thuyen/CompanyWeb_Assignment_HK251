@@ -56,19 +56,29 @@ class CartModel {
 
     public function getCartItems($cartId) {
         try {
-            $sql = "SELECT ci.*, p.name, p.image, p.stock 
-                    FROM {$this->itemsTable} ci 
-                    INNER JOIN products p ON ci.product_id = p.id 
-                    WHERE ci.cart_id = ? 
+            $sql = "SELECT 
+                        ci.id,
+                        ci.product_id,
+                        ci.quantity,
+                        ci.price AS price,
+                        p.name,
+                        p.image,
+                        p.stock
+                    FROM {$this->itemsTable} ci
+                    INNER JOIN products p ON ci.product_id = p.id
+                    WHERE ci.cart_id = ?
                     ORDER BY ci.created_at DESC";
-            
+
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$cartId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         } catch (PDOException $e) {
             return [];
         }
-    }
+}
+
+
 
     // =========================================================================
     // CORE CART OPERATIONS (Add, Update, Remove)

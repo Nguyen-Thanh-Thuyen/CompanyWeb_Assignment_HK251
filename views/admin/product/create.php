@@ -21,7 +21,7 @@
 </head>
 <body>
     <div class="page">
-        <?php include __DIR__ . '/../../includes/admin_sidebar.php'; ?>
+
 
         <div class="page-wrapper">
             <div class="page-header d-print-none">

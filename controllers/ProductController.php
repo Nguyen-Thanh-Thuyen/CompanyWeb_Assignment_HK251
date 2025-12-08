@@ -156,7 +156,7 @@ class ProductController extends BaseController {
 
         $keyword = isset($_GET['keyword']) ? trim($_GET['keyword']) : '';
         $page = isset($_GET['p']) ? max(1, intval($_GET['p'])) : 1;
-        $limit = 10;
+        $limit = 12;
         $offset = ($page - 1) * $limit;
 
         $products = $this->productModel->getAllForAdmin($keyword, $offset, $limit);
