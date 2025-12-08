@@ -36,7 +36,7 @@ class AuthController extends BaseController {
 
         $user = $this->userModel->findByEmail($email);
 
-        if ($user && password_verify($password, $user['password']) || $password===$user['password']) {
+        if ($user && password_verify($password, $user['password'])) {
 
             if (($user['status'] ?? 'active') === 'disabled') {
                 $this->loadView('auth/login', ['error' => 'Tài khoản của bạn đã bị vô hiệu hóa.']);
